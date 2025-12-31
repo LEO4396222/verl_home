@@ -1,0 +1,125 @@
+载入 40 条记录，字段: ['id', 'question', 'answer', 'url', 'data_source', 'prompt', 'ability', 'reward_model', 'extra_info', 'responses']
+
+按 data_source 统计：
+  math-ai/amc23: 40
+
+展示前 30 条样例：
+- 样例 0: data_source=math-ai/amc23, ability=math
+  ground_truth: {"ground_truth": "27", "style": "rule"}
+  response: ['             \n               \n                                      \n                           \n\nAnswer:30  \n']
+
+- 样例 1: data_source=math-ai/amc23, ability=math
+  ground_truth: {"ground_truth": "36", "style": "rule"}
+  response: ['                                                                         \n                            \n        \n                         \n\n              \n           \n                 \n        \n            \n        \n   \n  \n   \n\n\n\n  \n  \n    \n                      \n  \n                          \n                \n                           \n         \n       \n       \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nanswer:\n                                      8 \n']
+
+- 样例 2: data_source=math-ai/amc23, ability=math
+  ground_truth: {"ground_truth": "45", "style": "rule"}
+  response: ['                                              \n                                 \n               \n             \n\n        \n    \n           \n              \n                 \n        \n         \n   \n       \n                      \n                \n    \n            \n                          \n      \n                         \n  \n  \n  \n     \n                           \n                       \n                                   \n   \n                \n       \n\n\n\nAnswer:\n                                \n90 \n']
+
+- 样例 3: data_source=math-ai/amc23, ability=math
+  ground_truth: {"ground_truth": "3159", "style": "rule"}
+  response: ['                                               \n                           \n\nAnswer:                                             \n                \n    \n   \n21  \n']
+
+- 样例 4: data_source=math-ai/amc23, ability=math
+  ground_truth: {"ground_truth": "36", "style": "rule"}
+  response: ['             \n                                                              \n        \n               \n           \n   \n        \n  \n  \n    \n         \n              \n             \n\nAnswer:\n36 \n']
+
+- 样例 5: data_source=math-ai/amc23, ability=math
+  ground_truth: {"ground_truth": "7", "style": "rule"}
+  response: ['                                                                  \n                                \n\n               \n        \n             \n\n\n\n        \n           \n              \n                 \n        \n   \n  \n   \n\n\n  \n  \n    \n                      \n  \n            \n                       \n                           \n                          \n                \n         \n       \n        \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nAnswer:\n1        \n\n']
+
+- 样例 6: data_source=math-ai/amc23, ability=math
+  ground_truth: {"ground_truth": "21", "style": "rule"}
+  response: ['             \n                                           \n                                \n\n        \n        \n           \n             \n        \n   \n  \n              \n                         \n\n\n\nAnswer:\n                                 \n    \n                       \n7 \n']
+
+- 样例 7: data_source=math-ai/amc23, ability=math
+  ground_truth: {"ground_truth": "3", "style": "rule"}
+  response: ['             \n               \n              \n                                      \n                           \n\nAnswer:\n                         3  \n']
+
+- 样例 8: data_source=math-ai/amc23, ability=math
+  ground_truth: {"ground_truth": "1", "style": "rule"}
+  response: ['                                                                           \n             \n             \n\nanswer:1  \n']
+
+- 样例 9: data_source=math-ai/amc23, ability=math
+  ground_truth: {"ground_truth": "4", "style": "rule"}
+  response: ['             \n               \n                                  \n                                \n\nAnswer:                 \n        \n19  \n']
+
+- 样例 10: data_source=math-ai/amc23, ability=math
+  ground_truth: {"ground_truth": "5", "style": "rule"}
+  response: ['             \n                                      \n               \n          \n                           \n\nAnswer:\n5  \n']
+
+- 样例 11: data_source=math-ai/amc23, ability=math
+  ground_truth: {"ground_truth": "29", "style": "rule"}
+  response: ['                                        \n                                \n\n               \n        \n                            \n                  Answer:\n                             \n14    \n']
+
+- 样例 12: data_source=math-ai/amc23, ability=math
+  ground_truth: {"ground_truth": "96", "style": "rule"}
+  response: ['             \n                                       \n                           \n\n               \n          \n           \n              \n             \n        \n    \n   \n  \n  \n  \n   \n\n\n\nAnswer:\n2023 \n']
+
+- 样例 13: data_source=math-ai/amc23, ability=math
+  ground_truth: {"ground_truth": "1", "style": "rule"}
+  response: ['             \n                                      \n                           \n\n               \n          \n           \n             \n\n\n\nAnswer :\n\n1  \n']
+
+- 样例 14: data_source=math-ai/amc23, ability=math
+  ground_truth: {"ground_truth": "5", "style": "rule"}
+  response: ['             \n                                \n\n              \n               \n    \n      \n  \n  \n   \n    Answer:\n5        \n']
+
+- 样例 15: data_source=math-ai/amc23, ability=math
+  ground_truth: {"ground_truth": "-1", "style": "rule"}
+  response: ['             \n                                      \n               \n          \n                           \n\n              \n             \n\n\n\nAnswer:\n-1  \n']
+
+- 样例 16: data_source=math-ai/amc23, ability=math
+  ground_truth: {"ground_truth": "8", "style": "rule"}
+  response: ['             \n                \n        \n                           \n\nAnswer:            8  \n']
+
+- 样例 17: data_source=math-ai/amc23, ability=math
+  ground_truth: {"ground_truth": "18", "style": "rule"}
+  response: ['                                        \n                                      \n               \n             \n\n        \n    \n           \n              \n                 \n        \n            \n    \n   \n  \n  \n   \n\n\n\nAnswer:\n15 \n']
+
+- 样例 18: data_source=math-ai/amc23, ability=math
+  ground_truth: {"ground_truth": "265", "style": "rule"}
+  response: ['             \n                \n                                \n\nAnswer:                      15  \n']
+
+- 样例 19: data_source=math-ai/amc23, ability=math
+  ground_truth: {"ground_truth": "9", "style": "rule"}
+  response: ['             \n               \n                                      \n                           \n\n        \n           \n   Answer:\n13  \n']
+
+- 样例 20: data_source=math-ai/amc23, ability=math
+  ground_truth: {"ground_truth": "9", "style": "rule"}
+  response: ['             \n               \n                                \n\nAnswer:9  \n']
+
+- 样例 21: data_source=math-ai/amc23, ability=math
+  ground_truth: {"ground_truth": "7", "style": "rule"}
+  response: ['             \n                \n                                      \n                           \n\n        \n    \n   \n  \n  \n    \n           \n              \n             \n        \n            \n         \n       \n                \n                 \n                \n                \n\n\n\n                    \n                           \n            \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nAnswer:\n                                \n5        \n\n']
+
+- 样例 22: data_source=math-ai/amc23, ability=math
+  ground_truth: {"ground_truth": "7", "style": "rule"}
+  response: ['Answer:7  \n']
+
+- 样例 23: data_source=math-ai/amc23, ability=math
+  ground_truth: {"ground_truth": "7", "style": "rule"}
+  response: ['             \n               \n                                       \n                           \n\n           \n          \n         \n              \n             \n        \n   \n  \n  \n  \n       \n                      \n  \n    \n   \n\n\n\nAnswer:\n7        \n\n']
+
+- 样例 24: data_source=math-ai/amc23, ability=math
+  ground_truth: {"ground_truth": "13", "style": "rule"}
+  response: ['             \n                                                \n                           \n\n      \n        \n           \n    \n   \n  \n  \n    \n              \n             \n        \n         \n       \n                 \n                \n            \n                          \n  \n                         \n      \n                           \n                       \n                      \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nAnswer:\n5        \n\n']
+
+- 样例 25: data_source=math-ai/amc23, ability=math
+  ground_truth: {"ground_truth": "50", "style": "rule"}
+  response: ['             \n                                       \n                           \n\n               \n          \n             \n        \n           \n         \n              \n            \n\n\n\n  \n   \n  \n  \n    \n   \n\n\n\n\n                         \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nanswer:\n                \n75 \n']
+
+- 样例 26: data_source=math-ai/amc23, ability=math
+  ground_truth: {"ground_truth": "13", "style": "rule"}
+  response: ['                                                                  \n             \n               \n          \n   \n  \n  \n    \n  \n           \n              \n             \n\n                \n                 \n        \n            \n         \n       \n       \n\n\n\nAnswer:\n11 \n']
+
+- 样例 27: data_source=math-ai/amc23, ability=math
+  ground_truth: {"ground_truth": "5", "style": "rule"}
+  response: ['             \n                \n          \n                                \n\n           \n                             \n             \n        \n      \n    \n   \n  \n  \n   \n\n\n\nAnswer:\n              \n5         \n']
+
+- 样例 28: data_source=math-ai/amc23, ability=math
+  ground_truth: {"ground_truth": "11", "style": "rule"}
+  response: ['             \n       \n               \n          \n             \n\nAnswer:\n                              11  \n']
+
+- 样例 29: data_source=math-ai/amc23, ability=math
+  ground_truth: {"ground_truth": "18", "style": "rule"}
+  response: ['                                                                  \n             \n               \n          \n           \n              \n             \n\n   \n  \n                          \n\n\n\n  \n  \n    \n         \n        \n        \n            \n                 \n                \n                \n               \n  \n                         \n      \n                      \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nAnswer:\n18 \n']

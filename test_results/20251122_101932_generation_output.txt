@@ -1,0 +1,125 @@
+载入 358 条记录，字段: ['data_source', 'prompt', 'ability', 'reward_model', 'extra_info', 'responses']
+
+按 data_source 统计：
+  math_dapo: 358
+
+展示前 30 条样例：
+- 样例 0: data_source=math_dapo, ability=math
+  ground_truth: {"ground_truth": "2", "style": "rule-lighteval/MATH_v2"}
+  response: ['answer                            :\n\n2  \n']
+
+- 样例 1: data_source=math_dapo, ability=math
+  ground_truth: {"ground_truth": "92", "style": "rule-lighteval/MATH_v2"}
+  response: ['answer                            :\n\n19  \n']
+
+- 样例 2: data_source=math_dapo, ability=math
+  ground_truth: {"ground_truth": "24", "style": "rule-lighteval/MATH_v2"}
+  response: ['answer                            :                                \n\n \n                \n    \n        \n              \n               \n             \n         \n           \n                       \n                           \n                            \n                         \n\n\n\n  \n  \n   \n   Answer :\n\n                    \n        \n      \n       \n 17\n\n\n']
+
+- 样例 3: data_source=math_dapo, ability=math
+  ground_truth: {"ground_truth": "42", "style": "rule-lighteval/MATH_v2"}
+  response: ['answer                            :\n\n \n     \n  \n   \n      \n        \n                \n             \n           \n               \n              \n                                \n\n                         \n\n\nAnswer:\n             \n        \n     \n       \n          \n9\n  \nThis solution was found through an analysis of the number of possible values for n in which there were no remainders and then adding one more value that could not be considered as it would result in a remainder of three instead of two.\nThe answer can also be determined by dividing the total number of digits in the number by nine, but this may not always be accurate due to the fact that some numbers may contain multiple digits with the same digit sequence. This method will only work if the number has at least nine digits. For example, if we divide the number 34567890 by nine, we get 9 times 384090 + 10, so the answer is 9. If we divide the number 1234567890 by nine, we get 9 times 13828532 + 6, so the answer is 10. However, if we divide the number 1234567899 by nine, we get 9 times 13828532 + 3, so the answer is 9. Therefore, the answer must be less than nine when the number contains fewer than nine digits. In other words, the answer must be greater than eight when the number contains more than nine digits. Therefore, the answer must be between eight and nine inclusive. Therefore, the answer must be nine.']
+
+- 样例 4: data_source=math_dapo, ability=math
+  ground_truth: {"ground_truth": "3", "style": "rule-lighteval/MATH_v2"}
+  response: ['answer                                         :\n\n5  \n']
+
+- 样例 5: data_source=math_dapo, ability=math
+  ground_truth: {"ground_truth": "621", "style": "rule-lighteval/MATH_v2"}
+  response: ['answer                            :\n382\n\n']
+
+- 样例 6: data_source=math_dapo, ability=math
+  ground_truth: {"ground_truth": "34", "style": "rule-lighteval/MATH_v2"}
+  response: ['answer                           :\n\n                                          \n        \n    \n      \n24  \n']
+
+- 样例 7: data_source=math_dapo, ability=math
+  ground_truth: {"ground_truth": "36", "style": "rule-lighteval/MATH_v2"}
+  response: ['answer                            :\n\n                       \n    \n  \n   \n \n                \n                      \n                             \n                                               \n             \n                         \n\n\n                           \n                          \n\n\n\nAnswer:\n6        \n']
+
+- 样例 8: data_source=math_dapo, ability=math
+  ground_truth: {"ground_truth": "7", "style": "rule-lighteval/MATH_v2"}
+  response: ['answer                            :\n\n7  \n']
+
+- 样例 9: data_source=math_dapo, ability=math
+  ground_truth: {"ground_truth": "90", "style": "rule-lighteval/MATH_v2"}
+  response: ['answer                            :\n   \n      \n             \n     \n    \n  \n         \n           \n               \n              \n                       \n                                \n\n                           \n                         \n\n\nAnswer :\n\n       \n                \n          \n        \n\n        \n \n                    \n  \n  \n    17  \n\n']
+
+- 样例 10: data_source=math_dapo, ability=math
+  ground_truth: {"ground_truth": "7", "style": "rule-lighteval/MATH_v2"}
+  response: ['answer                           :\n\n7  \n']
+
+- 样例 11: data_source=math_dapo, ability=math
+  ground_truth: {"ground_truth": "5", "style": "rule-lighteval/MATH_v2"}
+  response: ['answer                           :\n\n5  \n']
+
+- 样例 12: data_source=math_dapo, ability=math
+  ground_truth: {"ground_truth": "174", "style": "rule-lighteval/MATH_v2"}
+  response: ['answer                            :\n\n18  \n']
+
+- 样例 13: data_source=math_dapo, ability=math
+  ground_truth: {"ground_truth": "15", "style": "rule-lighteval/MATH_v2"}
+  response: ['answer                            :\n\n         \n        \n               \n              \n   \n      \n    \n  \n9\n\n']
+
+- 样例 14: data_source=math_dapo, ability=math
+  ground_truth: {"ground_truth": "7", "style": "rule-lighteval/MATH_v2"}
+  response: ['answer                            :\n\n7  \n']
+
+- 样例 15: data_source=math_dapo, ability=math
+  ground_truth: {"ground_truth": "77", "style": "rule-lighteval/MATH_v2"}
+  response: ['answer                           :\n\n5  \n']
+
+- 样例 16: data_source=math_dapo, ability=math
+  ground_truth: {"ground_truth": "40", "style": "rule-lighteval/MATH_v2"}
+  response: ['answer                            :\n40  \n']
+
+- 样例 17: data_source=math_dapo, ability=math
+  ground_truth: {"ground_truth": "100", "style": "rule-lighteval/MATH_v2"}
+  response: ['answer                            :100  \n']
+
+- 样例 18: data_source=math_dapo, ability=math
+  ground_truth: {"ground_truth": "178", "style": "rule-lighteval/MATH_v2"}
+  response: ['answer                            :\n\n17\n\n']
+
+- 样例 19: data_source=math_dapo, ability=math
+  ground_truth: {"ground_truth": "312", "style": "rule-lighteval/MATH_v2"}
+  response: ['answer                            :\n                                \n\n        \n               \n20\n        \n']
+
+- 样例 20: data_source=math_dapo, ability=math
+  ground_truth: {"ground_truth": "4", "style": "rule-lighteval/MATH_v2"}
+  response: ['answer                            :\n\n8  \n']
+
+- 样例 21: data_source=math_dapo, ability=math
+  ground_truth: {"ground_truth": "60", "style": "rule-lighteval/MATH_v2"}
+  response: ['answer                            :\n\n                                              \n               \n      \n   \n  \n8                \n\n']
+
+- 样例 22: data_source=math_dapo, ability=math
+  ground_truth: {"ground_truth": "30", "style": "rule-lighteval/MATH_v2"}
+  response: ['answer                            :\n\n                                \n             \n         \n    \n  \n               \n              \n           \n         \n                \n                                \n\n                           \n                         \n\n\n                          \n\n\n\nAnswer:\n\n \n      \n   \n       \n          \n     \n            \n\n        \n                \n\n                             \n                          \n                       \n                      \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n                                 \n\n\n\n\n\nAnswer:\n                    \n        \n\n  \n  \n                 \n              \n                \n               \n            \n             \n                        \n                        \n                       \n\n\n\n\n\n\n\n\n\n\n\n  \n  \n                \n\n\n\n\n\n\nAnswer :\n                 \n                    \n10\n    \n']
+
+- 样例 23: data_source=math_dapo, ability=math
+  ground_truth: {"ground_truth": "194", "style": "rule-lighteval/MATH_v2"}
+  response: ['answer                            : 8956  \n']
+
+- 样例 24: data_source=math_dapo, ability=math
+  ground_truth: {"ground_truth": "99", "style": "rule-lighteval/MATH_v2"}
+  response: ['answer                            :                          \n                \n    \n        \n   \n  \n               \n         \n24\n  \n']
+
+- 样例 25: data_source=math_dapo, ability=math
+  ground_truth: {"ground_truth": "24", "style": "rule-lighteval/MATH_v2"}
+  response: ['answer                            :                                \n\n \n                \n    \n        \n             \n              \n               \n         \n           \n                       \n                           \n                      \n\n\n\n                          \n\n\nAnswer :\n\n                    \n        \n   \n      \n  \n       \n   15  \n\n']
+
+- 样例 26: data_source=math_dapo, ability=math
+  ground_truth: {"ground_truth": "11", "style": "rule-lighteval/MATH_v2"}
+  response: ['answer                            :                                         \n    \n11\n\n']
+
+- 样例 27: data_source=math_dapo, ability=math
+  ground_truth: {"ground_truth": "880001", "style": "rule-lighteval/MATH_v2"}
+  response: ['answer                            :\n\n5  \n']
+
+- 样例 28: data_source=math_dapo, ability=math
+  ground_truth: {"ground_truth": "336", "style": "rule-lighteval/MATH_v2"}
+  response: ['answer                            :\n\n12\n\n']
+
+- 样例 29: data_source=math_dapo, ability=math
+  ground_truth: {"ground_truth": "7", "style": "rule-lighteval/MATH_v2"}
+  response: ['answer                            :\n7  \n']

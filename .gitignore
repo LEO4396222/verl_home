@@ -1,0 +1,20 @@
+# training artifacts
+checkpoints/
+checkpoint/
+ckpt/
+outputs/
+runs/
+wandb/
+logs/
+
+# build artifacts
+build/
+dist/
+*.egg-info/
+
+# caches
+__pycache__/
+*.pyc
+.cache/
+training_rollout_metrics/
+*.tar.gz

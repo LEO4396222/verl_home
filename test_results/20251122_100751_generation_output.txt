@@ -1,0 +1,125 @@
+载入 150 条记录，字段: ['id', 'question', 'solution', 'final_answer', 'context', 'modality', 'difficulty', 'is_multiple_answer', 'unit', 'answer_type', 'error', 'question_type', 'subfield', 'subject', 'language', 'data_source', 'prompt', 'ability', 'reward_model', 'extra_info', 'responses']
+
+按 data_source 统计：
+  Hothan/OlympiadBench/OE_MM_maths_en_COMP: 150
+
+展示前 30 条样例：
+- 样例 0: data_source=Hothan/OlympiadBench/OE_MM_maths_en_COMP, ability=math
+  ground_truth: {"ground_truth": "['$\\\\frac{1}{2}$']", "style": "rule"}
+  response: ['Answer:\n\n               \n              \n                \n\n        \n             \n      \n   \n  \n\n           \n                                  \n         \n                \n                           \n                \n  \n  \n                    \n                           \n             \n        \n            \n       \n                         \n  \n    \n                      \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nanswer :\n\n2        \n\n']
+
+- 样例 1: data_source=Hothan/OlympiadBench/OE_MM_maths_en_COMP, ability=math
+  ground_truth: {"ground_truth": "['79.67']", "style": "rule"}
+  response: ['             \n               \n              \n                                      \n                           \n\nAnswer:\n30  \n']
+
+- 样例 2: data_source=Hothan/OlympiadBench/OE_MM_maths_en_COMP, ability=math
+  ground_truth: {"ground_truth": "['15']", "style": "rule"}
+  response: ['             \n                                                \n                           \n\n              \n           \n      \n        \n         \n    \n   \n  \n  \n    \n             \n        \n       \n       \n\n\n\nAnswer:\n                \n\n                \n          \n                 \n                 \n  \n \n                    \n                           \n                             \n                          \n                       \n                         \n                \n                          \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n            \n                \n\n\n\n\n\n\n\n\n\n\n\n\nanswer:                            \n                    \n\n\n                         \n24        \n\n']
+
+- 样例 3: data_source=Hothan/OlympiadBench/OE_MM_maths_en_COMP, ability=math
+  ground_truth: {"ground_truth": "['$15$']", "style": "rule"}
+  response: ['             \n                                   \n                           \n\nAnswer:                       \n      \n30        \n']
+
+- 样例 4: data_source=Hothan/OlympiadBench/OE_MM_maths_en_COMP, ability=math
+  ground_truth: {"ground_truth": "['$\\\\sqrt{5}$']", "style": "rule"}
+  response: ['             \n                                               \n               \n      \n         \n           \n       \n   \n        \n  \n  \n    \n  \n  \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nAnswer:\n                         \n\n          \n20 \n']
+
+- 样例 5: data_source=Hothan/OlympiadBench/OE_MM_maths_en_COMP, ability=math
+  ground_truth: {"ground_truth": "['$6\\\\sqrt{2-\\\\sqrt{3}}$']", "style": "rule"}
+  response: ['             \n               \n               \n                                      \n                           \n\n           \n    \n   \n  \n  \n    \n        \n         \n             \n        \n            \n       \n       \n\n\n\nAnswer:\n                    \n3        \n\n']
+
+- 样例 6: data_source=Hothan/OlympiadBench/OE_MM_maths_en_COMP, ability=math
+  ground_truth: {"ground_truth": "['$\\\\frac{8}{3}$']", "style": "rule"}
+  response: ['               \n             \n                                      \n                           \n\n        \n           \n              \n    \n   \n  \n  \n    \n         \n       \n             \n        \n            \n     \n                           \n                          \n                \n                \n                 \n  \n                    \n                         \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nAnswer:\n                            \n          \n                \n\n        \n\n2 \n']
+
+- 样例 7: data_source=Hothan/OlympiadBench/OE_MM_maths_en_COMP, ability=math
+  ground_truth: {"ground_truth": "['$200 \\\\sqrt{3}$']", "style": "rule"}
+  response: ['             \n                                          \n                                \n\n        \n      \n    \n   \n  \n  \n    \n           \n              \n             \n        \n            \n                 \n                \n                \n                \n\n\n\nAnswer:\n800 \n']
+
+- 样例 8: data_source=Hothan/OlympiadBench/OE_MM_maths_en_COMP, ability=math
+  ground_truth: {"ground_truth": "['5']", "style": "rule"}
+  response: ['             \n                \n                                      \n                           \n\n              \n    \n           \n   \n  \n  \n    \n        \n       \n         \n             \n        \n            \n                 \n                \n                \n                \n\n\n\nAnswer:\n25 \n']
+
+- 样例 9: data_source=Hothan/OlympiadBench/OE_MM_maths_en_COMP, ability=math
+  ground_truth: {"ground_truth": "['$4,(4,16)$']", "style": "rule"}
+  response: ['               \n             \n                                       \n                             \n          \n           \n              \n             \n        \n  \n  \n   \n         \n     \n       \n            \n    \n   \n\n\n\nAnswer:\n                       \n                        \n                \n          \n2 \n']
+
+- 样例 10: data_source=Hothan/OlympiadBench/OE_MM_maths_en_COMP, ability=math
+  ground_truth: {"ground_truth": "['33']", "style": "rule"}
+  response: ['             \n               \n                                      \n           \n              \n   Answer:\n28  \n']
+
+- 样例 11: data_source=Hothan/OlympiadBench/OE_MM_maths_en_COMP, ability=math
+  ground_truth: {"ground_truth": "['52']", "style": "rule"}
+  response: ['             \n               \n       \n              \n                                \n\n        \n           \n    \n   \n  \n  \n    \n                           \n        \n         \n             \n  \n            \n                           \n                         \n                \n                          \n      \n                \n       \n     \n       \n\n\n\nAnswer:\n30        \n\n']
+
+- 样例 12: data_source=Hothan/OlympiadBench/OE_MM_maths_en_COMP, ability=math
+  ground_truth: {"ground_truth": "['$-\\\\frac{3}{4}$']", "style": "rule"}
+  response: ['             \n                                                \n                           \n\n      \n           \n    \n   \n  \n  \n    \n         \n              \n             \n        \n            \n        \n       \n       \n\n\n\nAnswer:\n                                          4                \n']
+
+- 样例 13: data_source=Hothan/OlympiadBench/OE_MM_maths_en_COMP, ability=math
+  ground_truth: {"ground_truth": "['$2 \\\\sqrt{3} x$']", "style": "rule"}
+  response: ['             \n                                                \n                           \n\n      \n    \n           \n              \n             \n\n\n\nAnswer:\n                          8   \n']
+
+- 样例 14: data_source=Hothan/OlympiadBench/OE_MM_maths_en_COMP, ability=math
+  ground_truth: {"ground_truth": "['7,4']", "style": "rule"}
+  response: ['Answer:\n5  \n']
+
+- 样例 15: data_source=Hothan/OlympiadBench/OE_MM_maths_en_COMP, ability=math
+  ground_truth: {"ground_truth": "['8']", "style": "rule"}
+  response: ['             \n                                          \n                                \n\n        \n   Answer:\n2  \n']
+
+- 样例 16: data_source=Hothan/OlympiadBench/OE_MM_maths_en_COMP, ability=math
+  ground_truth: {"ground_truth": "['$25538$,$2053$']", "style": "rule"}
+  response: ['             \n                                      \n               \n           \n              \n          \n                           \n\n         \n             \n        \n    \n   \n  \n  \n  \n       \n                         \n  \n            \n                 \n                \n                \n                \n\n\n\nAnswer:\n                       \n8                \n\n']
+
+- 样例 17: data_source=Hothan/OlympiadBench/OE_MM_maths_en_COMP, ability=math
+  ground_truth: {"ground_truth": "['48']", "style": "rule"}
+  response: ['             \n                                      \n               \n          \n                           \n\n           \n              \n             \n        \n   \n  \n  \n  \n   \n\n\n\nAnswer:\n4    \n']
+
+- 样例 18: data_source=Hothan/OlympiadBench/OE_MM_maths_en_COMP, ability=math
+  ground_truth: {"ground_truth": "['2500']", "style": "rule"}
+  response: ['             \n               \n       \n              \n                                \n\nAnswer:\n1250  \n']
+
+- 样例 19: data_source=Hothan/OlympiadBench/OE_MM_maths_en_COMP, ability=math
+  ground_truth: {"ground_truth": "['$\\\\frac{2 a+b}{2 a-b}$']", "style": "rule"}
+  response: ['             \n                                                                           \n              \n        \n           \n             \n\n        \n   \n  \n  \n  \n                         \n\n\n\n    \n                          \n        \n         \n       \n                           \n                       \n                      \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nAnswer:\n2                \n']
+
+- 样例 20: data_source=Hothan/OlympiadBench/OE_MM_maths_en_COMP, ability=math
+  ground_truth: {"ground_truth": "['48']", "style": "rule"}
+  response: ['             \n                \n                                      \n                           \n\n              \n    \n   \n  \n  \n    \n        \n           \n         \n             \n        \n            \n       \n       \n\n\n\nAnswer:\n24                \n']
+
+- 样例 21: data_source=Hothan/OlympiadBench/OE_MM_maths_en_COMP, ability=math
+  ground_truth: {"ground_truth": "['7']", "style": "rule"}
+  response: ['             \n               \n               \n                                  \n           \n      \n        \n         \n       \n   Answer:\n   \n                \n          \n                 \n    \n \n                    \n        \n\n                \n\n29\n\n']
+
+- 样例 22: data_source=Hothan/OlympiadBench/OE_MM_maths_en_COMP, ability=math
+  ground_truth: {"ground_truth": "['20']", "style": "rule"}
+  response: ['             \n               \n                                      \n                           \n\nAnswer:\n            36  \n']
+
+- 样例 23: data_source=Hothan/OlympiadBench/OE_MM_maths_en_COMP, ability=math
+  ground_truth: {"ground_truth": "['$\\\\frac{1}{2}$']", "style": "rule"}
+  response: ['                                              \n                                          \n        \n           \n              \n             \n\n        \n   \n  \n         \n       \n  \n  \n    \n    Answer:\n                    \n                \n          \n3\n        \n']
+
+- 样例 24: data_source=Hothan/OlympiadBench/OE_MM_maths_en_COMP, ability=math
+  ground_truth: {"ground_truth": "['$\\\\frac{1}{6}$']", "style": "rule"}
+  response: ['             \n                                      \n               \n              \n           \n          \n                           \n\n  \n  \n  \n   \n         \n       \n             \n        \n    \n            \n                \n                 \n                \n                    \n                           \n                                    \n                                   \n      \n                         \n  \n     \n   \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nAnswer:\n2 \n']
+
+- 样例 25: data_source=Hothan/OlympiadBench/OE_MM_maths_en_COMP, ability=math
+  ground_truth: {"ground_truth": "['-1,27']", "style": "rule"}
+  response: ['             \n                                                \n           \n      \n        \n         \n              \n             \n\nAnswer:\n-3  \n']
+
+- 样例 26: data_source=Hothan/OlympiadBench/OE_MM_maths_en_COMP, ability=math
+  ground_truth: {"ground_truth": "['$13 \\\\sqrt{2}$']", "style": "rule"}
+  response: ['             \n               \n                            \n\n                                  \n        \n           \n              \n             \n\n\n\nAnswer:\n9    \n']
+
+- 样例 27: data_source=Hothan/OlympiadBench/OE_MM_maths_en_COMP, ability=math
+  ground_truth: {"ground_truth": "['3']", "style": "rule"}
+  response: ['             \n                                       \n                           \n\n               \n    \n   \n  \n  \n    \n        \n           \n              \n             \n        \n         \n       \n     \n       \n\n\n\nAnswer:\n2                \n']
+
+- 样例 28: data_source=Hothan/OlympiadBench/OE_MM_maths_en_COMP, ability=math
+  ground_truth: {"ground_truth": "['64']", "style": "rule"}
+  response: ['             \n                \n        \n                                \n\nAnswer:\n27  \n']
+
+- 样例 29: data_source=Hothan/OlympiadBench/OE_MM_maths_en_COMP, ability=math
+  ground_truth: {"ground_truth": "['$(20+4 \\\\sqrt{2})$']", "style": "rule"}
+  response: ['             \n                                                \n                           \n\nAnswer:\n20  \n']

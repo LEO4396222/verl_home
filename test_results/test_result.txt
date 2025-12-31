@@ -1,0 +1,34 @@
+###advclip_prob_+0.3_-0.7_4200_steps:
+dapo_math(奖励曲线，也是乱码)：{'test_score/math_dapo': -0.20081486856058492}
+MATH-500(输出乱码)：{'test_score/HuggingFaceH4/MATH-500': 0.0}
+OlympiadBench（输出乱码）：{'test_score/Hothan/OlympiadBench/OE_MM_maths_en_COMP': 0.013333333333333334}
+amc23：{'test_score/math-ai/amc23': 0.375}
+
+###advclip_prob_+0.3_-0.7_200_steps:
+OlympiadBench-qwen-math-Prompt(可以遵循qwen-math格式)：{'test_score/Hothan/OlympiadBench/OE_MM_maths_en_COMP': 0.0}
+
+###advclip_prob_+0.3_-0.7_2200_steps:
+OlympiadBench-qwen-math-Prompt(不能遵循qwen-math格式)：{'test_score/Hothan/OlympiadBench/OE_MM_maths_en_COMP': 0.006666666666666667}
+
+###base model:
+OlympiadBench-qwen-math-Prompt(遵循qwen-math格式){'test_score/Hothan/OlympiadBench/OE_MM_maths_en_COMP': 0.02}
+
+
+###grpo_baseline_100_step:
+MATH-500:{'test_score/HuggingFaceH4/MATH-500': 0.544}
+amc23：{'test_score/math-ai/amc23': 0.25}
+OlympiadBench：{'test_score/Hothan/OlympiadBench/OE_MM_maths_en_COMP': 0.08666666666666667}
+gsm8k：{'test_score/openai/gsm8k': 0.7247915087187263}
+
+###grpo_loss_reweight_5_follow_cov_300_step：
+MATH-500：{'test_score/HuggingFaceH4/MATH-500': 0.532}
+amc23：{'test_score/math-ai/amc23': 0.35}
+OlympiadBench：{'test_score/Hothan/OlympiadBench/OE_MM_maths_en_COMP': 0.07333333333333333}
+gsm8k：{'test_score/openai/gsm8k': 0.7414708112206216}
+aime2024:{'test_score/HuggingFaceH4/aime_2024': 0.03333333333333333}
+aime2025:{'test_score/yentinglin/aime_2025': 0.0}
+
+###grpo_adv_entropy_sigmoid_0.5_+5_200steps:
+amc23：{'test_score/math-ai/amc23': 0.275}
+MATH-500:{'test_score/HuggingFaceH4/MATH-500': 0.516}
+gsm8k：{'test_score/openai/gsm8k': 0.7225170583775588}
