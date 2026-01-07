@@ -126,14 +126,3 @@ logs
 log
 outputs
 .history
-
-# training artifacts
-training_rollout_metrics/
-checkpoints/
-wandb/
-swanlab/
-*.pt
-*.ckpt
-*.safetensors
-*.tar.gz
-*.zip
