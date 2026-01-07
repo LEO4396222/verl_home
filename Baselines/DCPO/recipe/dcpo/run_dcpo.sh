@@ -1,12 +1,16 @@
 set -x
 
+export CUDA_VISIBLE_DEVICES=0,1,2,3
+
+export N_GPUS_PER_NODE=4
+
 pip install func_timeout
 pip install latex2sympy2_extended
 pip install math-verify
 pip install tensorboard
 
-export WORLD_SIZE=${WORLD_SIZE:-1}
-export RANK=${RANK:-0}
+export WORLD_SIZE=1
+export RANK=0
 export CHECKPOINT_SAVE=${CHECKPOINT_SAVE:-"/tmp/"}
 export CHECKPOINT_LOAD=${CHECKPOINT_LOAD:-/checkpoint_load}
 ray stop --force
@@ -24,17 +28,17 @@ export WANDB_API_KEY=$wandb_key
 export TENSORBOARD_DIR=${CHECKPOINT_SAVE}/runs
 
 # pre-train model path
-export MODEL_PATH=$CHECKPOINT_LOAD/small_models/Qwen2.5-Math-7B
+export MODEL_PATH=${MODEL_PATH:-"Qwen/Qwen2.5-Math-1.5B"}
 
 
 
 ##qwen
-data_root=./data
-train_files="$data_root/train.parquet,"
-val_files="$data_root/aime_2024.parquet,$data_root/aime_2025.parquet,$data_root/math500.parquet,$data_root/amc2023.parquet,"
+data_root=/data/huaiwenzhang/Datasets/dapo_math
+train_path=$data_root/train.parquet
+test_path=$data_root/test.parquet
 
-train_files="[${train_files::-1}]"
-val_files="[${val_files::-1}]"
+train_files="['$train_path']"
+val_files="['$test_path']"
 
 
 # Ray

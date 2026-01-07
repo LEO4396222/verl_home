@@ -134,7 +134,7 @@ class vLLMRollout(BaseRollout):
         if config.get("limit_images", None):  # support for multi-image data
             limit_mm_per_prompt = {"image": config.get("limit_images")}
 
-        self.inference_engine = LLM(
+        llm_kwargs = dict(
             model=model_path,
             enable_sleep_mode=True,
             tensor_parallel_size=tensor_parallel_size,
@@ -143,8 +143,6 @@ class vLLMRollout(BaseRollout):
             enforce_eager=config.enforce_eager,
             gpu_memory_utilization=config.gpu_memory_utilization,
             disable_custom_all_reduce=True,
-            disable_mm_preprocessor_cache=True,
-            limit_mm_per_prompt=limit_mm_per_prompt,
             skip_tokenizer_init=False,
             max_model_len=max_model_len,
             load_format=load_format,
@@ -155,6 +153,11 @@ class vLLMRollout(BaseRollout):
             trust_remote_code=trust_remote_code,
             seed=config.get("seed", 0),
         )
+        if limit_mm_per_prompt is not None:
+            llm_kwargs["limit_mm_per_prompt"] = limit_mm_per_prompt
+            llm_kwargs["disable_mm_preprocessor_cache"] = True
+
+        self.inference_engine = LLM(**llm_kwargs)
 
         # Offload vllm model to reduce peak memory usage
         self.inference_engine.sleep(level=1)

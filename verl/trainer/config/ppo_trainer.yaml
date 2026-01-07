@@ -34,6 +34,9 @@ defaults:
   # self config override anything above
   - _self_
 
+# Enable pg cov metrics for actor/entropy attribution.
+enable_pg_cov_metrics: False
+
 # config for actor, rollout and reference model
 actor_rollout_ref:
 

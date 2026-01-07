@@ -114,8 +114,12 @@ class RLHFDataset(Dataset):
         self.apply_chat_template_kwargs = config.get("apply_chat_template_kwargs", {})
         self.strip_user_prompt_prefix = config.get("strip_user_prompt_prefix", False)
         self.user_prompt_prefix = config.get("user_prompt_prefix", None)
+        self.strip_user_prompt_suffix = config.get("strip_user_prompt_suffix", False)
+        self.user_prompt_suffix = config.get("user_prompt_suffix", None)
         if isinstance(self.user_prompt_prefix, str) and "\\n" in self.user_prompt_prefix:
             self.user_prompt_prefix = self.user_prompt_prefix.replace("\\n", "\n")
+        if isinstance(self.user_prompt_suffix, str) and "\\n" in self.user_prompt_suffix:
+            self.user_prompt_suffix = self.user_prompt_suffix.replace("\\n", "\n")
 
         self.tool_config_path = config.get("tool_config_path", None)
         self.tool_schemas = None
@@ -279,6 +283,17 @@ class RLHFDataset(Dataset):
                 content = message.get("content", "")
                 if isinstance(content, str) and content.startswith(self.user_prompt_prefix):
                     message["content"] = content[len(self.user_prompt_prefix) :]
+                break
+        if self.strip_user_prompt_suffix and self.user_prompt_suffix:
+            for message in messages:
+                if message.get("role") != "user":
+                    continue
+                content = message.get("content", "")
+                if isinstance(content, str):
+                    trimmed = content.rstrip()
+                    if trimmed.endswith(self.user_prompt_suffix):
+                        trimmed = trimmed[: -len(self.user_prompt_suffix)].rstrip()
+                        message["content"] = trimmed
                 break
 
         if self.image_key in example or self.video_key in example:

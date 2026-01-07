@@ -2,7 +2,7 @@
 set -x
 
 # NCCL (align with Baselines/DAPO baseline format)
-export CUDA_VISIBLE_DEVICES=4,5,6,7
+export CUDA_VISIBLE_DEVICES=0,1,2,3
 export NCCL_P2P_DISABLE=1
 export NCCL_P2P_LEVEL=LOC
 export NCCL_CUMEM_HOST_ENABLE=0
@@ -18,13 +18,42 @@ dapo_math_test_path=$DATA_PATH/dapo_math/test.parquet
 train_files="['$dapo_math_train_path']"
 test_files="['$dapo_math_test_path']"
 
-# Default enable Qwen-Math prompt template (contains \boxed{} constraint for reward parsing)
+# 默认启用 Qwen-Math Prompt 模版（包含 \boxed{} 约束，利于奖励解析）。
 USE_QWEN_MATH_TEMPLATE=${USE_QWEN_MATH_TEMPLATE:-1}
-QWEN_MATH_TEMPLATE_PATH=${QWEN_MATH_TEMPLATE_PATH:-"$(dirname "$0")/../../../../examples/grpo_trainer/qwen_math_chat_template.jinja"}
+QWEN_MATH_TEMPLATE_PATH=${QWEN_MATH_TEMPLATE_PATH:-"$(dirname "$0")/qwen_math_chat_template.jinja"}
 
 # Strip the first user-prefix for dapo_math
 STRIP_DAPO_MATH_USER_PREFIX=${STRIP_DAPO_MATH_USER_PREFIX:-1}
 DAPO_MATH_USER_PREFIX='Solve the following math problem step by step. The last line of your response should be of the form Answer: $Answer (without quotes) where $Answer is the answer to the problem.\n\n'
+
+enable_pg_cov_metrics=true
+user_args=()
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --enable_pg_cov_metrics)
+            if [[ "${2:-}" == "true" || "${2:-}" == "false" ]]; then
+                if [[ "$2" == "true" ]]; then
+                    enable_pg_cov_metrics=true
+                fi
+                shift 2
+            else
+                enable_pg_cov_metrics=true
+                shift
+            fi
+            ;;
+        --enable_pg_cov_metrics=*)
+            value="${1#*=}"
+            if [[ "$value" == "true" || "$value" == "1" ]]; then
+                enable_pg_cov_metrics=true
+            fi
+            shift
+            ;;
+        *)
+            user_args+=("$1")
+            shift
+            ;;
+    esac
+done
 
 extra_args=()
 if [[ "$USE_QWEN_MATH_TEMPLATE" == "1" ]]; then
@@ -41,13 +70,18 @@ if [[ "$STRIP_DAPO_MATH_USER_PREFIX" == "1" ]]; then
     extra_args+=("+data.user_prompt_prefix='${DAPO_MATH_USER_PREFIX}'")
 fi
 
+pg_cov_args=()
+if [[ "$enable_pg_cov_metrics" == "true" ]]; then
+    pg_cov_args+=(--enable_pg_cov_metrics true)
+fi
+
 python3 -m recipe.dapo.main_dapo \
     algorithm.adv_estimator=grpo \
     algorithm.use_kl_in_reward=False \
     algorithm.kl_ctrl.kl_coef=0.0 \
     algorithm.filter_groups.enable=True \
     algorithm.filter_groups.metric=acc \
-    algorithm.filter_groups.max_num_gen_batches=10 \
+    algorithm.filter_groups.max_num_gen_batches=0 \
     data.train_files="$train_files" \
     data.val_files="$test_files" \
     data.prompt_key=prompt \
@@ -80,6 +114,7 @@ python3 -m recipe.dapo.main_dapo \
     actor_rollout_ref.rollout.val_kwargs.n=1 \
     actor_rollout_ref.ref.log_prob_use_dynamic_bsz=False \
     actor_rollout_ref.ref.log_prob_max_token_len_per_gpu=10240 \
+    actor_rollout_ref.ref.log_prob_micro_batch_size=4 \
     actor_rollout_ref.ref.log_prob_micro_batch_size_per_gpu=4 \
     actor_rollout_ref.ref.fsdp_config.param_offload=False \
     actor_rollout_ref.ref.ulysses_sequence_parallel_size=1 \
@@ -124,4 +159,5 @@ python3 -m recipe.dapo.main_dapo \
     trainer.total_epochs=1000 \
     trainer.resume_mode=disable \
     "${extra_args[@]}" \
-    "$@"
+    "${pg_cov_args[@]}" \
+    "${user_args[@]}"

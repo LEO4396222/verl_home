@@ -17,6 +17,9 @@ defaults:
   - reward_model@reward_model: megatron_reward_model
   - _self_
 
+# Enable pg cov metrics for actor/entropy attribution.
+enable_pg_cov_metrics: False
+
 actor_rollout_ref:
   hybrid_engine: True
 

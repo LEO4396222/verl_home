@@ -22,6 +22,8 @@ data:
       path: null
       name: null
 
+enable_pg_cov_metrics: False
+
 actor_rollout_ref:
   hybrid_engine: True
   model:

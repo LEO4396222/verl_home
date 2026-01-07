@@ -201,13 +201,9 @@ def is_correct_minerva(
     Returns:
         Tuple of (is_correct, normalized_prediction)
     """
-    # Extract answer from solution (prefer boxed answer)
-    boxed = last_boxed_only_string(solution_str)
-    if boxed:
-        extracted_answer = remove_boxed(boxed)
-    else:
-        match = re.findall(answer_pattern, solution_str)
-        extracted_answer = match[-1] if match else "[INVALID]"
+    # Extract answer from solution
+    match = re.findall(answer_pattern, solution_str)
+    extracted_answer = match[-1] if match else "[INVALID]"
     pred = normalize_final_answer(extracted_answer)
 
     # Process ground truth

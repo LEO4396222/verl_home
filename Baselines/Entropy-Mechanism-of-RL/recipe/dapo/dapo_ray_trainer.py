@@ -32,7 +32,7 @@ from verl.trainer.ppo.metric_utils import (
     compute_timing_metrics,
     reduce_metrics,
 )
-from verl.trainer.ppo.ray_trainer import AdvantageEstimator, RayPPOTrainer, _timer, apply_kl_penalty, compute_advantage, compute_response_mask
+from verl.trainer.ppo.ray_trainer import AdvantageEstimator, RayPPOTrainer, _timer, apply_kl_penalty, compute_advantage, compute_pg_cov_metrics, compute_response_mask
 
 
 class RayDAPOTrainer(RayPPOTrainer):
@@ -320,6 +320,16 @@ class RayDAPOTrainer(RayPPOTrainer):
                             num_repeat=self.config.actor_rollout_ref.rollout.n,
                             norm_adv_by_std_in_grpo=norm_adv_by_std_in_grpo,
                         )
+                        if self.config.get("enable_pg_cov_metrics", False):
+                            loss_mask = batch.batch["loss_mask"] if "loss_mask" in batch.batch else None
+                            metrics.update(
+                                compute_pg_cov_metrics(
+                                    log_probs=batch.batch["old_log_probs"],
+                                    advantages=batch.batch["advantages"],
+                                    response_mask=batch.batch["response_mask"],
+                                    loss_mask=loss_mask,
+                                )
+                            )
 
                     # update critic
                     if self.use_critic:

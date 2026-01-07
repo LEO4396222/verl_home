@@ -244,4 +244,15 @@ def create_rl_sampler(data_config, dataset):
 
 
 if __name__ == "__main__":
+    import argparse
+    import sys
+
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument("--enable_pg_cov_metrics", nargs="?", const="true")
+    args, remaining = parser.parse_known_args()
+    if args.enable_pg_cov_metrics is not None:
+        value = str(args.enable_pg_cov_metrics).lower()
+        enable_flag = value in ("1", "true", "yes", "y")
+        remaining.append(f"enable_pg_cov_metrics={'true' if enable_flag else 'false'}")
+    sys.argv = [sys.argv[0]] + remaining
     main()

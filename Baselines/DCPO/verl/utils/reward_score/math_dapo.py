@@ -190,7 +190,7 @@ def is_correct_minerva(
     return (pred == gt), pred
 
 
-def is_correct_strict_box(
+def is_correct_strict_box(#当__init__.py 里，math_dapo 分支现在是 strict_box_verify=True时执行此函数
     pred: str, gt: str, pause_tokens_index: Optional[list[int]] = None
 ) -> tuple[int, Optional[str]]:
     """Check if the prediction is correct using strict boxed answer criteria.

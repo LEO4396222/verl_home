@@ -64,6 +64,12 @@ strip_user_prompt_prefix: False
 # 需要剥离的 user prompt 前缀；支持 \n 转换为换行。
 user_prompt_prefix: null
 
+# 是否剥离 user 末尾 prompt 后缀，仅对第一个 user 消息生效。
+strip_user_prompt_suffix: False
+
+# 需要剥离的 user prompt 后缀；支持 \n 转换为换行。
+user_prompt_suffix: null
+
 # Whether to shuffle the data in the dataloader.
 shuffle: True
 

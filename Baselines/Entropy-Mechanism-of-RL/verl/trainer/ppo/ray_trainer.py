@@ -184,6 +184,69 @@ def compute_response_mask(data: DataProto):
     return attention_mask[:, -response_length:]
 
 
+def compute_pg_cov_metrics(
+    log_probs: torch.Tensor,
+    advantages: torch.Tensor,
+    response_mask: torch.Tensor,
+    loss_mask: Optional[torch.Tensor] = None,
+):
+    with torch.no_grad():
+        update_mask = response_mask > 0
+        if loss_mask is not None:
+            response_length = response_mask.size(1)
+            update_mask = update_mask & (loss_mask[:, -response_length:] > 0)
+
+        log_probs_f = log_probs.float()
+        advantages_f = advantages.float()
+        mask = update_mask.to(dtype=log_probs_f.dtype)
+        n_eff = mask.sum()
+        if n_eff.item() == 0:
+            return {
+                "actor/pg_cov_mean": 0.0,
+                "actor/pg_cov_sum": 0.0,
+                "actor/pg_cov_n_eff": 0.0,
+                "actor/pg_share_posA_posCov": 0.0,
+                "actor/pg_share_posA_negCov": 0.0,
+            }
+
+        mean_x = (log_probs_f * mask).sum() / n_eff
+        p_t = torch.exp(log_probs_f)
+        y_t = p_t * advantages_f
+        mean_y = (y_t * mask).sum() / n_eff
+        mean_xy = (log_probs_f * y_t * mask).sum() / n_eff
+        cov_mean = mean_xy - mean_x * mean_y
+        cov_sum = cov_mean * n_eff
+
+        centered_x = log_probs_f - mean_x
+        centered_y = y_t - mean_y
+        c_t = centered_x * centered_y * mask
+        pos_c = torch.clamp(c_t, min=0.0)
+        neg_c = torch.clamp(-c_t, min=0.0)
+        pos_mass = pos_c.sum()
+        neg_mass = neg_c.sum()
+
+        pos_adv_mask = (advantages_f > 0).to(dtype=log_probs_f.dtype)
+        posA_pos_cov = (pos_c * pos_adv_mask).sum()
+        posA_neg_cov = (neg_c * pos_adv_mask).sum()
+
+        if pos_mass.item() == 0:
+            share_posA_pos_cov = torch.tensor(0.0, device=log_probs_f.device)
+        else:
+            share_posA_pos_cov = posA_pos_cov / pos_mass
+        if neg_mass.item() == 0:
+            share_posA_neg_cov = torch.tensor(0.0, device=log_probs_f.device)
+        else:
+            share_posA_neg_cov = posA_neg_cov / neg_mass
+
+        return {
+            "actor/pg_cov_mean": cov_mean.item(),
+            "actor/pg_cov_sum": cov_sum.item(),
+            "actor/pg_cov_n_eff": n_eff.item(),
+            "actor/pg_share_posA_posCov": share_posA_pos_cov.item(),
+            "actor/pg_share_posA_negCov": share_posA_neg_cov.item(),
+        }
+
+
 def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_repeat=1, multi_turn=False, norm_adv_by_std_in_grpo=True):
     # Back-compatible with trainers that do not compute response mask in fit
     if "response_mask" not in data.batch:
@@ -1069,6 +1132,16 @@ class RayPPOTrainer:
                             norm_adv_by_std_in_grpo=norm_adv_by_std_in_grpo,
                             multi_turn=self.config.actor_rollout_ref.rollout.multi_turn.enable,
                         )
+                        if self.config.get("enable_pg_cov_metrics", False):
+                            loss_mask = batch.batch["loss_mask"] if "loss_mask" in batch.batch else None
+                            metrics.update(
+                                compute_pg_cov_metrics(
+                                    log_probs=batch.batch["old_log_probs"],
+                                    advantages=batch.batch["advantages"],
+                                    response_mask=batch.batch["response_mask"],
+                                    loss_mask=loss_mask,
+                                )
+                            )
 
                     # update critic
                     if self.use_critic:

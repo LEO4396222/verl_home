@@ -3,11 +3,19 @@ set -x
 
 export CUDA_VISIBLE_DEVICES=4,5,6,7
 export SWANLAB_RESUME=must
-export SWANLAB_RUN_ID=2kh392m5h3g85v2gxyiyl
+export SWANLAB_RUN_ID=i9gdmqna7fv74sw45ztxn
 export SWANLAB_API_KEY=8R8HNqo9NAMTXM5kXknCl
 export SWANLAB_MODE=cloud
 
-MODEL_PATH=Qwen/Qwen2.5-1.5B-Instruct
+#使用缓存的模型权重
+HF_CACHE_DIR="${HF_HOME:-$HOME/.cache/huggingface}"
+MODEL_REPO_DIR="${HF_CACHE_DIR}/hub/models--Qwen--Qwen2.5-Math-1.5B"
+MODEL_SNAPSHOT_FILE="${MODEL_REPO_DIR}/refs/main"
+if [[ ! -f "$MODEL_SNAPSHOT_FILE" ]]; then
+    echo "Model cache not found: $MODEL_REPO_DIR" >&2
+    exit 1
+fi
+MODEL_PATH="${MODEL_REPO_DIR}/snapshots/$(cat "$MODEL_SNAPSHOT_FILE")"
 DATA_PATH=/data/huaiwenzhang/Datasets
 
 
@@ -28,6 +36,10 @@ FILTER_ALL_CORRECT_WRONG=${FILTER_ALL_CORRECT_WRONG:-true}
 STRIP_DAPO_MATH_USER_PREFIX=${STRIP_DAPO_MATH_USER_PREFIX:-1}
 DAPO_MATH_USER_PREFIX='Solve the following math problem step by step. The last line of your response should be of the form Answer: $Answer (without quotes) where $Answer is the answer to the problem.\n\n'
 
+# 可选：剥离 dapo_math user 末尾 prompt 后缀（-0表示不执行，-1表示执行）
+STRIP_DAPO_MATH_USER_SUFFIX=${STRIP_DAPO_MATH_USER_SUFFIX:-1}
+DAPO_MATH_USER_SUFFIX='Remember to put your answer on its own line after "Answer:".'
+
 extra_args=()
 if [[ "$USE_QWEN_MATH_TEMPLATE" == "1" ]]; then
     if [[ ! -f "$QWEN_MATH_TEMPLATE_PATH" ]]; then
@@ -44,6 +56,10 @@ if [[ "$STRIP_DAPO_MATH_USER_PREFIX" == "1" ]]; then
     extra_args+=("data.strip_user_prompt_prefix=true")
     extra_args+=("+data.user_prompt_prefix='${DAPO_MATH_USER_PREFIX}'")
 fi
+if [[ "$STRIP_DAPO_MATH_USER_SUFFIX" == "1" ]]; then
+    extra_args+=("data.strip_user_prompt_suffix=true")
+    extra_args+=("+data.user_prompt_suffix='${DAPO_MATH_USER_SUFFIX}'")
+fi
 
 python3 -m verl.trainer.main_ppo \
     algorithm.adv_estimator=grpo \
@@ -51,7 +67,7 @@ python3 -m verl.trainer.main_ppo \
     data.val_files="$test_files" \
     data.train_batch_size=128 \
     data.max_prompt_length=1024 \
-    data.max_response_length=4096 \
+    data.max_response_length=3072 \
     data.filter_overlong_prompts=False \
     data.prompt_key=prompt \
     data.truncation=left \
@@ -82,19 +98,22 @@ python3 -m verl.trainer.main_ppo \
     actor_rollout_ref.rollout.tensor_model_parallel_size=1 \
     actor_rollout_ref.rollout.temperature=0.7 \
     actor_rollout_ref.rollout.top_p=0.95 \
-    actor_rollout_ref.rollout.gpu_memory_utilization=0.5 \
+    actor_rollout_ref.rollout.gpu_memory_utilization=0.65 \
     actor_rollout_ref.rollout.enable_chunked_prefill=False \
     trainer.resume_mode=disable \
     trainer.val_before_train=False \
     trainer.logger='["console","swanlab"]' \
-    trainer.rollout_data_dir=/data/huaiwenzhang/projects/verl/training_rollout_metrics/grpo_advclip_baseline_follow_cov_new \
+    trainer.rollout_data_dir=/data/huaiwenzhang/projects/verl/training_rollout_metrics/grpo_advclip_baseline_qwen2.5_math_1.5b_qwen_prompt \
+    trainer.rollout_rank_log_freq=0 \
     trainer.project_name='verl_grpo_qwen2_5_1_5b_gsm8k_math' \
-    trainer.experiment_name='grpo_advclip_baseline_follow_cov_new' \
+    trainer.experiment_name='grpo_advclip_baseline_qwen2.5_math_1.5b_qwen_prompt' \
     trainer.n_gpus_per_node=4 \
     trainer.nnodes=1 \
     trainer.filter_all_correct_wrong=True\
     trainer.save_freq=50 \
     trainer.test_freq=25 \
     trainer.total_epochs=15 \
+    data.shuffle=True \
+    data.seed=42 \
     "${extra_args[@]}" \
     "$@"
