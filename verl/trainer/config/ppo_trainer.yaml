@@ -36,6 +36,8 @@ defaults:
 
 # Enable pg cov metrics for actor/entropy attribution.
 enable_pg_cov_metrics: False
+# Enable abs(-logprob - entropy) mean metric on sampled tokens.
+enable_pg_entropy_diff_metrics: False
 
 # config for actor, rollout and reference model
 actor_rollout_ref:
@@ -208,6 +210,9 @@ trainer:
 
   # Whether to run validation only
   val_only: False
+
+  # Optional list of validation sample counts (e.g., [1, 32]); when set, runs validation for each n.
+  validation_n_list: null
 
   # Validation frequency (in training iterations)
   test_freq: -1

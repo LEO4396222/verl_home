@@ -825,7 +825,40 @@ class RayPPOTrainer:
 
         return gen_batch
 
+    def _resolve_validation_n_list(self) -> list[int]:
+        val_n_list = self.config.trainer.get("validation_n_list", None)
+        if val_n_list is None or val_n_list == []:
+            return [int(self.config.actor_rollout_ref.rollout.val_kwargs.n)]
+        if OmegaConf.is_list(val_n_list):
+            val_n_list = list(val_n_list)
+        elif isinstance(val_n_list, str):
+            val_n_list = [item.strip() for item in val_n_list.split(",") if item.strip()]
+        elif isinstance(val_n_list, (int, float)):
+            val_n_list = [val_n_list]
+        else:
+            val_n_list = list(val_n_list) if isinstance(val_n_list, (list, tuple, set)) else [val_n_list]
+
+        normalized = []
+        seen = set()
+        for item in val_n_list:
+            n_val = int(item)
+            if n_val <= 0:
+                raise ValueError("trainer.validation_n_list must contain positive ints")
+            if n_val not in seen:
+                normalized.append(n_val)
+                seen.add(n_val)
+        return normalized
+
     def _validate(self):
+        metric_dict = {}
+        for val_n in self._resolve_validation_n_list():
+            metrics = self._validate_once(val_n)
+            if not metrics:
+                return metrics
+            metric_dict.update(metrics)
+        return metric_dict
+
+    def _validate_once(self, val_n: int):
         data_source_lst = []
         reward_extra_infos_dict: dict[str, list] = defaultdict(list)
 
@@ -846,9 +879,7 @@ class RayPPOTrainer:
                 )
 
             # repeat test batch
-            test_batch = test_batch.repeat(
-                repeat_times=self.config.actor_rollout_ref.rollout.val_kwargs.n, interleave=True
-            )
+            test_batch = test_batch.repeat(repeat_times=val_n, interleave=True)
 
             # we only do validation on rule-based rm
             if self.config.reward_model.enable and test_batch[0].non_tensor_batch["reward_model"]["style"] == "model":
@@ -1589,6 +1620,12 @@ class RayPPOTrainer:
                             axis=-1,
                         ).detach().cpu().tolist()
                         batch.meta_info["avg_token_entropy"] = avg_token_entropy
+                        if self.config.get("enable_pg_entropy_diff_metrics", False):
+                            log_probs = old_log_prob.batch.get("old_log_probs")
+                            if log_probs is not None:
+                                abs_diff = (-(log_probs) - entropys).abs()
+                                diff_mean = masked_mean(abs_diff, response_masks).detach().item()
+                                metrics["actor/neglogprob_entropy_abs_mean"] = diff_mean
                         if "reward_extra_infos_dict" in locals() and reward_extra_infos_dict is not None:
                             reward_extra_infos_dict["avg_token_entropy"] = avg_token_entropy
                         old_log_prob.batch.pop("entropys")

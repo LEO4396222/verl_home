@@ -7,12 +7,23 @@ export CUDA_VISIBLE_DEVICES=4,5,6,7
 MODEL_PATH=Qwen/Qwen2.5-1.5B-Instruct
 DATA_PATH=/data/huaiwenzhang/Datasets
 
+#使用缓存的模型权重
+HF_CACHE_DIR="${HF_HOME:-$HOME/.cache/huggingface}"
+MODEL_REPO_DIR="${HF_CACHE_DIR}/hub/models--Qwen--Qwen2.5-Math-1.5B"
+MODEL_SNAPSHOT_FILE="${MODEL_REPO_DIR}/refs/main"
+if [[ ! -f "$MODEL_SNAPSHOT_FILE" ]]; then
+    echo "Model cache not found: $MODEL_REPO_DIR" >&2
+    exit 1
+fi
+MODEL_PATH="${MODEL_REPO_DIR}/snapshots/$(cat "$MODEL_SNAPSHOT_FILE")"
+DATA_PATH=/data/huaiwenzhang/Datasets
 
 dapo_math_train_path=$DATA_PATH/dapo_math/train.parquet
 dapo_math_test_path=$DATA_PATH/dapo_math/test.parquet
 
 train_files="['$dapo_math_train_path']"
 test_files="['$dapo_math_test_path']"
+
 
 # 默认启用 Qwen-Math Prompt 模版（包含 \boxed{} 约束，利于奖励解析）。
 USE_QWEN_MATH_TEMPLATE=${USE_QWEN_MATH_TEMPLATE:-1}
@@ -25,6 +36,9 @@ FILTER_ALL_CORRECT_WRONG=${FILTER_ALL_CORRECT_WRONG:-true}
 STRIP_DAPO_MATH_USER_PREFIX=${STRIP_DAPO_MATH_USER_PREFIX:-1}
 DAPO_MATH_USER_PREFIX='Solve the following math problem step by step. The last line of your response should be of the form Answer: $Answer (without quotes) where $Answer is the answer to the problem.\n\n'
 
+# 可选：剥离 dapo_math user 末尾 prompt 后缀（-0表示不执行，-1表示执行）
+STRIP_DAPO_MATH_USER_SUFFIX=${STRIP_DAPO_MATH_USER_SUFFIX:-1}
+DAPO_MATH_USER_SUFFIX='Remember to put your answer on its own line after "Answer:".'
 
 extra_args=()
 if [[ "$USE_QWEN_MATH_TEMPLATE" == "1" ]]; then
@@ -42,6 +56,10 @@ if [[ "$STRIP_DAPO_MATH_USER_PREFIX" == "1" ]]; then
     extra_args+=("data.strip_user_prompt_prefix=true")
     extra_args+=("+data.user_prompt_prefix='${DAPO_MATH_USER_PREFIX}'")
 fi
+if [[ "$STRIP_DAPO_MATH_USER_SUFFIX" == "1" ]]; then
+    extra_args+=("data.strip_user_prompt_suffix=true")
+    extra_args+=("+data.user_prompt_suffix='${DAPO_MATH_USER_SUFFIX}'")
+fi
 
 python3 -m verl.trainer.main_ppo \
     algorithm.adv_estimator=grpo \
@@ -49,7 +67,7 @@ python3 -m verl.trainer.main_ppo \
     data.val_files="$test_files" \
     data.train_batch_size=128 \
     data.max_prompt_length=1024 \
-    data.max_response_length=4096 \
+    data.max_response_length=3072 \
     data.filter_overlong_prompts=False \
     data.truncation=left \
     actor_rollout_ref.model.path=$MODEL_PATH \
@@ -70,7 +88,7 @@ python3 -m verl.trainer.main_ppo \
     actor_rollout_ref.actor.policy_loss.advantage_clip.sigmoid_p0_quantile=0.5 \
     actor_rollout_ref.actor.policy_loss.advantage_clip.sigmoid_alpha_pos=5.0 \
     actor_rollout_ref.actor.policy_loss.advantage_clip.sigmoid_alpha_neg=null \
-    trainer.cliped_token_pair_enable=True \
+    trainer.cliped_token_pair_enable=False \
     actor_rollout_ref.ref.entropy_from_logits_with_chunking=True \
     actor_rollout_ref.actor.entropy_checkpointing=True \
     actor_rollout_ref.actor.fsdp_config.param_offload=False \
@@ -87,14 +105,16 @@ python3 -m verl.trainer.main_ppo \
     actor_rollout_ref.rollout.enable_chunked_prefill=False \
     trainer.resume_mode=disable \
     trainer.logger='["console","swanlab"]' \
-    trainer.rollout_data_dir=/data/huaiwenzhang/projects/verl/training_rollout_metrics/grpo_advclip_entropy_sigmoid_prob0.5_+5_follow_cov \
+    trainer.rollout_data_dir=/data/huaiwenzhang/projects/verl/training_rollout_metrics/grpo_advclip_entropy_both_sigmoid_sequence_prob0.5_+5_follow_cov \
     trainer.project_name='verl_grpo_qwen2_5_1_5b_gsm8k_math' \
-    trainer.experiment_name='grpo_advclip_entropy_sigmoid_prob0.5_+5_follow_cov' \
+    trainer.experiment_name='grpo_advclip_entropy_both_sigmoid_sequence_prob0.5_+5_follow_cov' \
     trainer.n_gpus_per_node=4 \
     trainer.nnodes=1 \
     trainer.save_freq=50 \
     trainer.test_freq=25 \
     trainer.total_epochs=15 \
-    trainer.filter_all_correct_wrong=true \
+    trainer.filter_all_correct_wrong=True \
+    data.shuffle=True \
+    data.seed=42 \
     "${extra_args[@]}" \
     "$@"

@@ -10,11 +10,11 @@ from verl.model_merger.fsdp_model_merger import FSDPModelMerger
 def main():
     # 源分片所在目录（指向 actor 子目录）
     ckpt_dir = Path(
-        "/data/huaiwenzhang/projects/verl/checkpoints/verl_grpo_qwen2_5_1_5b_gsm8k_math/grpo_advclip_entropy_sigmoid_prob0.5_+5_follow_cov/global_step_200/actor"
+        "/data/huaiwenzhang/projects/verl/checkpoints/verl_grpo_qwen2_5_1_5b_gsm8k_math/grpo_advclip_baseline_qwen2.5_math_1.5b_qwen_prompt/global_step_400/actor"
     )
     # 合并后模型输出目录
     target_dir = Path(
-        "/data/huaiwenzhang/projects/verl/checkpoints/verl_grpo_qwen2_5_1_5b_gsm8k_math/grpo_advclip_entropy_sigmoid_prob0.5_+5_follow_cov/merged_global_step_200"
+        "/data/huaiwenzhang/projects/verl/checkpoints/verl_grpo_qwen2_5_1_5b_gsm8k_math/grpo_advclip_baseline_qwen2.5_math_1.5b_qwen_prompt/merged_global_step_400"
     )
     target_dir.mkdir(parents=True, exist_ok=True)
 

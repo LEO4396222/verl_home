@@ -19,6 +19,8 @@ defaults:
 
 # Enable pg cov metrics for actor/entropy attribution.
 enable_pg_cov_metrics: False
+# Enable abs(-logprob - entropy) mean metric on sampled tokens.
+enable_pg_entropy_diff_metrics: False
 
 actor_rollout_ref:
   hybrid_engine: True

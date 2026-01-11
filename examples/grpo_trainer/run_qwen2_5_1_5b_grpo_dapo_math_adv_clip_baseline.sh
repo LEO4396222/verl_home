@@ -1,11 +1,8 @@
 #!/usr/bin/env bash
 set -x
 
-export CUDA_VISIBLE_DEVICES=4,5,6,7
-export SWANLAB_RESUME=must
-export SWANLAB_RUN_ID=i9gdmqna7fv74sw45ztxn
-export SWANLAB_API_KEY=8R8HNqo9NAMTXM5kXknCl
-export SWANLAB_MODE=cloud
+export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+
 
 #使用缓存的模型权重
 HF_CACHE_DIR="${HF_HOME:-$HOME/.cache/huggingface}"
@@ -20,10 +17,13 @@ DATA_PATH=/data/huaiwenzhang/Datasets
 
 
 dapo_math_train_path=$DATA_PATH/dapo_math/train.parquet
-dapo_math_test_path=$DATA_PATH/dapo_math/test.parquet
+math500_test_path=$DATA_PATH/_normalized_for_concat_v2/math500.parquet
+amc23_test_path=$DATA_PATH/_normalized_for_concat_v2/amc23.parquet
+aime_2024_test_path=$DATA_PATH/_normalized_for_concat_v2/aime24.parquet
+aime_2025_test_path=$DATA_PATH/_normalized_for_concat_v2/aime25.parquet
 
 train_files="['$dapo_math_train_path']"
-test_files="['$dapo_math_test_path']"
+test_files="['$math500_test_path', '$amc23_test_path', '$aime_2024_test_path', '$aime_2025_test_path']"
 
 # 默认启用 Qwen-Math Prompt 模版（包含 \boxed{} 约束，利于奖励解析）。
 USE_QWEN_MATH_TEMPLATE=${USE_QWEN_MATH_TEMPLATE:-1}
@@ -65,7 +65,7 @@ python3 -m verl.trainer.main_ppo \
     algorithm.adv_estimator=grpo \
     data.train_files="$train_files" \
     data.val_files="$test_files" \
-    data.train_batch_size=128 \
+    data.train_batch_size=512 \
     data.max_prompt_length=1024 \
     data.max_response_length=3072 \
     data.filter_overlong_prompts=False \
@@ -75,14 +75,13 @@ python3 -m verl.trainer.main_ppo \
     actor_rollout_ref.model.use_remove_padding=True \
     actor_rollout_ref.model.enable_gradient_checkpointing=True \
     actor_rollout_ref.model.enable_activation_offload=True \
-    actor_rollout_ref.actor.optim.lr=2e-6 \
+    actor_rollout_ref.actor.optim.lr=1e-6 \
     actor_rollout_ref.actor.clip_ratio=0.2 \
-    actor_rollout_ref.actor.ppo_mini_batch_size=128 \
+    actor_rollout_ref.actor.ppo_mini_batch_size=32 \
     actor_rollout_ref.actor.ppo_micro_batch_size_per_gpu=2 \
     actor_rollout_ref.actor.use_kl_loss=False \
     actor_rollout_ref.actor.kl_loss_coef=0.0 \
     actor_rollout_ref.actor.entropy_coeff=0 \
-    actor_rollout_ref.rollout.max_num_batched_tokens=8192 \
     actor_rollout_ref.actor.ppo_epochs=1 \
     actor_rollout_ref.actor.policy_loss.advantage_clip.enable=False \
     trainer.cliped_token_pair_enable=False \
@@ -92,26 +91,30 @@ python3 -m verl.trainer.main_ppo \
     actor_rollout_ref.actor.fsdp_config.optimizer_offload=False \
     actor_rollout_ref.ref.fsdp_config.param_offload=False \
     actor_rollout_ref.rollout.log_prob_micro_batch_size_per_gpu=4 \
-    actor_rollout_ref.ref.log_prob_micro_batch_size_per_gpu=4 \
+    actor_rollout_ref.ref.log_prob_micro_batch_size_per_gpu=2 \
     actor_rollout_ref.rollout.name=vllm \
     actor_rollout_ref.rollout.n=8 \
     actor_rollout_ref.rollout.tensor_model_parallel_size=1 \
-    actor_rollout_ref.rollout.temperature=0.7 \
-    actor_rollout_ref.rollout.top_p=0.95 \
-    actor_rollout_ref.rollout.gpu_memory_utilization=0.65 \
+    actor_rollout_ref.rollout.temperature=1.0 \
+    actor_rollout_ref.rollout.top_p=1.0 \
+    actor_rollout_ref.rollout.gpu_memory_utilization=0.6 \
     actor_rollout_ref.rollout.enable_chunked_prefill=False \
+    actor_rollout_ref.rollout.val_kwargs.top_p=0.7 \
+    actor_rollout_ref.rollout.val_kwargs.temperature=1.0 \
+    actor_rollout_ref.rollout.val_kwargs.do_sample=true \
+    trainer.validation_n_list=[1,32] \
+    enable_pg_entropy_diff_metrics=true \
     trainer.resume_mode=disable \
     trainer.val_before_train=False \
     trainer.logger='["console","swanlab"]' \
-    trainer.rollout_data_dir=/data/huaiwenzhang/projects/verl/training_rollout_metrics/grpo_advclip_baseline_qwen2.5_math_1.5b_qwen_prompt \
+    trainer.rollout_data_dir=/data/huaiwenzhang/projects/verl/training_rollout_metrics/grpo_baseline_qwen2.5_math_1.5b_RETHINK_settings \
     trainer.rollout_rank_log_freq=0 \
     trainer.project_name='verl_grpo_qwen2_5_1_5b_gsm8k_math' \
-    trainer.experiment_name='grpo_advclip_baseline_qwen2.5_math_1.5b_qwen_prompt' \
-    trainer.n_gpus_per_node=4 \
+    trainer.experiment_name='grpo_baseline_qwen2.5_math_1.5b_RETHINK_settings' \
+    trainer.n_gpus_per_node=8 \
     trainer.nnodes=1 \
-    trainer.filter_all_correct_wrong=True\
-    trainer.save_freq=50 \
-    trainer.test_freq=25 \
+    trainer.save_freq=40 \
+    trainer.test_freq=10 \
     trainer.total_epochs=15 \
     data.shuffle=True \
     data.seed=42 \
