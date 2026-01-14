@@ -46,6 +46,7 @@ PolicyLossFn = Callable[
         torch.Tensor | None,  # rollout_log_probs
         float | None,  # entropy_current
         float | None,  # entropy_target
+        torch.Tensor | None,  # token_entropys
     ],
     tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]
     | tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, dict[str, torch.Tensor]],
@@ -329,6 +330,116 @@ def _apply_sigmoid_clip(
     return output
 
 
+def _apply_seq_norm_sigmoid_clip(
+    adv: torch.Tensor,
+    log_prob: torch.Tensor,
+    mask: torch.Tensor,
+    token_entropys: torch.Tensor | None,
+    clip_conf: Any,
+    prob_eps: float,
+    need_metrics: bool,
+    entropy_target: float | None,
+) -> torch.Tensor | tuple[torch.Tensor, dict[str, torch.Tensor] | None]:
+    """序列级 sigmoid：按序列内 p0 分位数 + 熵偏差对优势平滑加权，并做 L2 归一化。"""
+    valid_mask = mask.to(dtype=torch.bool)
+    if not torch.any(valid_mask):
+        return (adv, None) if need_metrics else adv
+
+    if token_entropys is None:
+        raise ValueError("seq_norm_sigmoid requires token_entropys")
+
+    token_prob = torch.exp(log_prob).to(adv.dtype)
+    token_prob = torch.clamp(token_prob, min=prob_eps, max=1.0)
+
+    p0_cfg = _cfg_get(clip_conf, "sigmoid_p0_prob", None)
+    p0_quantile_cfg = _cfg_get(clip_conf, "sigmoid_p0_quantile", None)
+    if p0_cfg is None and p0_quantile_cfg is None:
+        return (adv, None) if need_metrics else adv
+
+    alpha_pos = _cfg_get(clip_conf, "sigmoid_alpha_pos", None)
+    alpha_neg = _cfg_get(clip_conf, "sigmoid_alpha_neg", None)
+    if alpha_pos is None and alpha_neg is None:
+        return (adv, None) if need_metrics else adv
+    if alpha_pos is not None and float(alpha_pos) <= 0.0:
+        raise ValueError("advantage_clip.sigmoid_alpha_pos must be > 0 when set")
+    if alpha_neg is not None and float(alpha_neg) >= 0.0:
+        raise ValueError("advantage_clip.sigmoid_alpha_neg must be < 0 when set")
+
+    if p0_cfg is not None and not 0.0 < float(p0_cfg) <= 1.0:
+        raise ValueError("advantage_clip.sigmoid_p0_prob must be in (0, 1]")
+    if p0_cfg is None and p0_quantile_cfg is not None and not 0.0 <= float(p0_quantile_cfg) <= 1.0:
+        raise ValueError("advantage_clip.sigmoid_p0_quantile must be in [0, 1]")
+
+    entropy_target_val = _to_float(entropy_target)
+    if entropy_target_val is None:
+        raise ValueError("seq_norm_sigmoid requires entropy_target")
+
+    # 每条序列计算 p0（分位数或固定概率）
+    if p0_cfg is not None:
+        p0 = adv.new_full((adv.shape[0],), float(p0_cfg))
+    else:
+        p0_list = []
+        for i in range(adv.shape[0]):
+            valid_probs = token_prob[i][valid_mask[i]]
+            if valid_probs.numel() == 0:
+                p0_list.append(adv.new_tensor(1.0))
+            else:
+                p0_list.append(torch.quantile(valid_probs, float(p0_quantile_cfg)))
+        p0 = torch.stack(p0_list, dim=0)
+    p0 = p0.clamp(min=prob_eps, max=1.0)
+
+    # 序列级熵与 delta
+    seq_entropy = verl_F.masked_mean(token_entropys, mask, axis=-1).to(dtype=adv.dtype)
+    delta_entropy = (entropy_target_val - seq_entropy) / (entropy_target_val + prob_eps)
+
+    alpha_pos_actual = None
+    alpha_neg_actual = None
+    if alpha_pos is not None:
+        alpha_pos_actual = delta_entropy * adv.new_tensor(float(alpha_pos))
+    if alpha_neg is not None:
+        alpha_neg_actual = delta_entropy * adv.new_tensor(float(alpha_neg))
+
+    weights = adv.new_ones(adv.shape)
+    pos_mask = valid_mask & (adv > 0) if alpha_pos_actual is not None else None
+    neg_mask = valid_mask & (adv < 0) if alpha_neg_actual is not None else None
+
+    if alpha_pos_actual is not None and pos_mask is not None and torch.any(pos_mask):
+        f_plus = 2.0 / (1.0 + torch.exp(alpha_pos_actual[:, None] * (token_prob - p0[:, None])))
+        f_plus = f_plus.detach()
+        weights = torch.where(pos_mask, f_plus, weights)
+    if alpha_neg_actual is not None and neg_mask is not None and torch.any(neg_mask):
+        f_minus = 2.0 / (1.0 + torch.exp(alpha_neg_actual[:, None] * (token_prob - p0[:, None])))
+        f_minus = f_minus.detach()
+        weights = torch.where(neg_mask, f_minus, weights)
+
+    output = adv * weights
+
+    # 序列内 L2 归一化，保持尺度
+    adv_sq_sum = verl_F.masked_sum(adv * adv, mask, axis=-1)
+    out_sq_sum = verl_F.masked_sum(output * output, mask, axis=-1)
+    scale = torch.sqrt(adv_sq_sum / (out_sq_sum + prob_eps))
+    scale = torch.where(out_sq_sum > 0, scale, adv.new_ones(scale.shape))
+    output = output * scale[:, None]
+
+    if need_metrics:
+        valid_tokens = valid_mask.sum().clamp(min=1).to(dtype=adv.dtype)
+        eps = adv.new_tensor(1e-6)
+        amp_frac = (weights[valid_mask] > (1.0 + eps)).float().sum().to(dtype=adv.dtype) / valid_tokens
+        shrink_frac = (weights[valid_mask] < (1.0 - eps)).float().sum().to(dtype=adv.dtype) / valid_tokens
+        clip_stats = {
+            "adv_clipfrac_pos": adv.new_tensor(0.0),
+            "adv_clipfrac_neg": adv.new_tensor(0.0),
+            "adv_seq_sigmoid_amp_frac": amp_frac,
+            "adv_seq_sigmoid_shrink_frac": shrink_frac,
+        }
+        if alpha_pos_actual is not None:
+            clip_stats["adv_sigmoid_alpha_pos"] = alpha_pos_actual.mean().detach()
+        if alpha_neg_actual is not None:
+            clip_stats["adv_sigmoid_alpha_neg"] = alpha_neg_actual.mean().detach()
+        return output, clip_stats
+    return output
+
+
 def _apply_positional_weight(
     adv: torch.Tensor,
     mask: torch.Tensor,
@@ -363,6 +474,7 @@ def apply_advantage_clip(
     return_clip_metrics: bool = False,
     entropy_current: float | None = None,
     entropy_target: float | None = None,
+    token_entropys: torch.Tensor | None = None,
 ) -> torch.Tensor | tuple[torch.Tensor, dict[str, torch.Tensor] | None]:
     """统一入口：根据 mode 选择 coef 或 quantile 裁剪，enable=False 时直接返回原优势。"""
     if clip_cfg is None or not _cfg_get(clip_cfg, "enable", False):
@@ -393,6 +505,17 @@ def apply_advantage_clip(
             entropy_current,
             entropy_target,
         )
+    if mode == "seq_norm_sigmoid":
+        return _apply_seq_norm_sigmoid_clip(
+            advantages,
+            old_log_prob,
+            response_mask,
+            token_entropys,
+            clip_cfg,
+            prob_epsilon,
+            return_clip_metrics,
+            entropy_target,
+        )
     if mode == "quantile":
         return _apply_quantile_clip(advantages, old_log_prob, response_mask, clip_cfg, prob_epsilon, return_clip_metrics)
     if mode != "coef":
@@ -417,6 +540,7 @@ def _maybe_clip_advantages(
     return_clip_metrics: bool = False,
     entropy_current: float | None = None,
     entropy_target: float | None = None,
+    token_entropys: torch.Tensor | None = None,
 ) -> torch.Tensor | tuple[torch.Tensor, dict[str, torch.Tensor] | None]:
     """Apply advantage clipping if enabled (coef mode or quantile mode)."""
     if config is None:
@@ -441,6 +565,7 @@ def _maybe_clip_advantages(
         return_clip_metrics=return_clip_metrics,
         entropy_current=entropy_current,
         entropy_target=entropy_target,
+        token_entropys=token_entropys,
     )
 
 POLICY_LOSS_REGISTRY: dict[str, PolicyLossFn] = {}
@@ -1293,6 +1418,7 @@ def compute_policy_loss_vanilla(
     rollout_is_weights: torch.Tensor | None = None,
     entropy_current: float | None = None,
     entropy_target: float | None = None,
+    token_entropys: torch.Tensor | None = None,
 ) -> (
     tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]
     | tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, dict[str, torch.Tensor]]
@@ -1354,6 +1480,7 @@ def compute_policy_loss_vanilla(
         return_clip_metrics=clip_enabled,
         entropy_current=entropy_current,
         entropy_target=entropy_target,
+        token_entropys=token_entropys,
     )
     if clip_enabled:
         advantages, clip_metrics = clipped_advantages
@@ -1411,6 +1538,7 @@ def compute_policy_loss_gspo(
     rollout_is_weights: torch.Tensor | None = None,
     entropy_current: float | None = None,
     entropy_target: float | None = None,
+    token_entropys: torch.Tensor | None = None,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     """
     Compute the clipped policy objective and related metrics for GSPO.
@@ -1442,6 +1570,7 @@ def compute_policy_loss_gspo(
         config,
         entropy_current=entropy_current,
         entropy_target=entropy_target,
+        token_entropys=token_entropys,
     )
 
     negative_approx_kl = log_prob - old_log_prob
@@ -1492,6 +1621,7 @@ def compute_policy_loss_gpg(
     rollout_is_weights: torch.Tensor | None = None,
     entropy_current: float | None = None,
     entropy_target: float | None = None,
+    token_entropys: torch.Tensor | None = None,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     """Adapted from
     https://github.com/AMAP-ML/GPG/blob/main/VisualThinker-R1-Zero/src/open-r1-multimodal/src/open_r1/trainer/grpo_trainer.py#L495
@@ -1513,6 +1643,7 @@ def compute_policy_loss_gpg(
         config,
         entropy_current=entropy_current,
         entropy_target=entropy_target,
+        token_entropys=token_entropys,
     )
     
     pg_losses = -log_prob * advantages
@@ -1536,6 +1667,7 @@ def compute_policy_loss_clip_cov(
     rollout_is_weights: torch.Tensor | None = None,
     entropy_current: float | None = None,
     entropy_target: float | None = None,
+    token_entropys: torch.Tensor | None = None,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     """
     Compute the clipped policy objective and related metrics for Clip-Cov.
@@ -1588,6 +1720,7 @@ def compute_policy_loss_clip_cov(
         config,
         entropy_current=entropy_current,
         entropy_target=entropy_target,
+        token_entropys=token_entropys,
     )
     
     negative_approx_kl = log_prob - old_log_prob
@@ -1647,6 +1780,7 @@ def compute_policy_loss_kl_cov(
     rollout_is_weights: torch.Tensor | None = None,
     entropy_current: float | None = None,
     entropy_target: float | None = None,
+    token_entropys: torch.Tensor | None = None,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     """
     Compute the clipped policy objective and related metrics for Clip-Cov.
@@ -1686,6 +1820,7 @@ def compute_policy_loss_kl_cov(
         config,
         entropy_current=entropy_current,
         entropy_target=entropy_target,
+        token_entropys=token_entropys,
     )
     
     negative_approx_kl = log_prob - old_log_prob
@@ -1734,6 +1869,7 @@ def compute_policy_loss_geo_mean(
     rollout_is_weights: torch.Tensor | None = None,
     entropy_current: float | None = None,
     entropy_target: float | None = None,
+    token_entropys: torch.Tensor | None = None,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     """
     Compute the clipped policy objective and related metrics for GMPO.
@@ -1775,6 +1911,7 @@ def compute_policy_loss_geo_mean(
         config,
         entropy_current=entropy_current,
         entropy_target=entropy_target,
+        token_entropys=token_entropys,
     )
 
     negative_approx_kl = log_prob - old_log_prob

@@ -10,6 +10,8 @@ _MATH_VERIFY_SOURCES = {
     "amc23",
     "huggingfaceh4/math-500",
     "hothan/olympiadbench/oe_mm_maths_en_comp",
+    "math-ai/minervamath",
+    "minerva_math",
 }
 
 

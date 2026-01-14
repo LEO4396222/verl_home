@@ -391,7 +391,10 @@ class DataParallelPPOActor(BasePPOActor):
         clip_cfg = self.config.policy_loss.advantage_clip
         sigmoid_entropy_current = data.meta_info.get("sigmoid_entropy_current")
         sigmoid_entropy_target = data.meta_info.get("sigmoid_entropy_target")
-        sigmoid_enabled = bool(getattr(clip_cfg, "enable", False)) and getattr(clip_cfg, "mode", "") == "sigmoid"
+        clip_enabled = bool(getattr(clip_cfg, "enable", False))
+        clip_mode = getattr(clip_cfg, "mode", "")
+        sigmoid_enabled = clip_enabled and clip_mode in ("sigmoid", "seq_norm_sigmoid")
+        seq_norm_enabled = clip_enabled and clip_mode == "seq_norm_sigmoid"
         sigmoid_alpha_pos_cfg = getattr(clip_cfg, "sigmoid_alpha_pos", None) if sigmoid_enabled else None
         sigmoid_alpha_neg_cfg = getattr(clip_cfg, "sigmoid_alpha_neg", None) if sigmoid_enabled else None
 
@@ -426,9 +429,7 @@ class DataParallelPPOActor(BasePPOActor):
                         loss_scale_factor = 1 / self.gradient_accumulation
 
                     # all return: (bsz, response_length)
-                    calculate_entropy = False
-                    if entropy_coeff != 0:
-                        calculate_entropy = True
+                    calculate_entropy = entropy_coeff != 0 or seq_norm_enabled
                     entropy, log_prob = self._forward_micro_batch(
                         model_inputs, temperature=temperature, calculate_entropy=calculate_entropy
                     )
@@ -468,6 +469,7 @@ class DataParallelPPOActor(BasePPOActor):
                         rollout_is_weights=rollout_is_weights,
                         entropy_current=sigmoid_entropy_current,
                         entropy_target=sigmoid_entropy_target,
+                        token_entropys=entropy,
                     )
 
                     clip_metrics = None
@@ -529,6 +531,9 @@ class DataParallelPPOActor(BasePPOActor):
                             clip_metrics["adv_sigmoid_alpha_pos"] = torch.tensor(0.0, device=advantages.device)
                         if sigmoid_alpha_neg_cfg is not None:
                             clip_metrics["adv_sigmoid_alpha_neg"] = torch.tensor(0.0, device=advantages.device)
+                        if seq_norm_enabled:
+                            clip_metrics["adv_seq_sigmoid_amp_frac"] = torch.tensor(0.0, device=advantages.device)
+                            clip_metrics["adv_seq_sigmoid_shrink_frac"] = torch.tensor(0.0, device=advantages.device)
                     else:
                         clip_metrics = {
                             **clip_metrics,
@@ -544,6 +549,13 @@ class DataParallelPPOActor(BasePPOActor):
                         if sigmoid_alpha_neg_cfg is not None:
                             clip_metrics.setdefault(
                                 "adv_sigmoid_alpha_neg", torch.tensor(0.0, device=advantages.device)
+                            )
+                        if seq_norm_enabled:
+                            clip_metrics.setdefault(
+                                "adv_seq_sigmoid_amp_frac", torch.tensor(0.0, device=advantages.device)
+                            )
+                            clip_metrics.setdefault(
+                                "adv_seq_sigmoid_shrink_frac", torch.tensor(0.0, device=advantages.device)
                             )
                     for key, value in clip_metrics.items():
                         # 跳过 adv_sigmoid_*，后续输出聚合结果

@@ -80,6 +80,7 @@ def ppo_loss(config: ActorConfig, model_output, data: TensorDict, dp_group=None)
         config=config,
         entropy_current=entropy_current,
         entropy_target=entropy_target,
+        token_entropys=entropy,
     )
     
     clip_metrics = None

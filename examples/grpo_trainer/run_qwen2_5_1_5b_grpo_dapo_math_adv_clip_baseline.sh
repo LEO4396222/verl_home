@@ -21,9 +21,11 @@ math500_test_path=$DATA_PATH/_normalized_for_concat_v2/math500.parquet
 amc23_test_path=$DATA_PATH/_normalized_for_concat_v2/amc23.parquet
 aime_2024_test_path=$DATA_PATH/_normalized_for_concat_v2/aime24.parquet
 aime_2025_test_path=$DATA_PATH/_normalized_for_concat_v2/aime25.parquet
+minerva_test_path=$DATA_PATH/_normalized_for_concat_v2/minerva_math.parquet
+olympiabench_test_path=$DATA_PATH/_normalized_for_concat_v2/olympiadbench.parquet
 
 train_files="['$dapo_math_train_path']"
-test_files="['$math500_test_path', '$amc23_test_path', '$aime_2024_test_path', '$aime_2025_test_path']"
+test_files="['$math500_test_path', '$amc23_test_path', '$aime_2024_test_path', '$aime_2025_test_path', '$minerva_test_path', '$olympiabench_test_path']"
 
 # 默认启用 Qwen-Math Prompt 模版（包含 \boxed{} 约束，利于奖励解析）。
 USE_QWEN_MATH_TEMPLATE=${USE_QWEN_MATH_TEMPLATE:-1}

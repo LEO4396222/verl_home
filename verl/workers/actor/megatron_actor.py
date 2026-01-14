@@ -449,7 +449,10 @@ class MegatronPPOActor(BasePPOActor):
 
                 policy_loss_fn = get_policy_loss_fn(loss_mode)
                 clip_cfg = self.config.policy_loss.advantage_clip
-                sigmoid_enabled = bool(getattr(clip_cfg, "enable", False)) and getattr(clip_cfg, "mode", "") == "sigmoid"
+                clip_enabled = bool(getattr(clip_cfg, "enable", False))
+                clip_mode = getattr(clip_cfg, "mode", "")
+                sigmoid_enabled = clip_enabled and clip_mode in ("sigmoid", "seq_norm_sigmoid")
+                seq_norm_enabled = clip_enabled and clip_mode == "seq_norm_sigmoid"
                 sigmoid_alpha_pos_cfg = getattr(clip_cfg, "sigmoid_alpha_pos", None) if sigmoid_enabled else None
                 sigmoid_alpha_neg_cfg = getattr(clip_cfg, "sigmoid_alpha_neg", None) if sigmoid_enabled else None
 
@@ -463,6 +466,9 @@ class MegatronPPOActor(BasePPOActor):
                 # and avoids redundant computation across workers and micro-batches.
                 sigmoid_entropy_current = meta_info.get("sigmoid_entropy_current")
                 sigmoid_entropy_target = meta_info.get("sigmoid_entropy_target")
+                token_entropys = None
+                if entropy is not None:
+                    token_entropys = entropy[:, -response_length - 1 : -1].contiguous()
                 policy_loss_output = policy_loss_fn(
                     old_log_prob=old_log_prob,
                     log_prob=log_prob,
@@ -473,6 +479,7 @@ class MegatronPPOActor(BasePPOActor):
                     rollout_is_weights=rollout_is_weights,
                     entropy_current=sigmoid_entropy_current,
                     entropy_target=sigmoid_entropy_target,
+                    token_entropys=token_entropys,
                 )
                 clip_metrics = None
                 if (
@@ -508,6 +515,13 @@ class MegatronPPOActor(BasePPOActor):
                         clip_metrics.setdefault(
                             "adv_sigmoid_alpha_neg", torch.tensor(0.0, device=advantages.device)
                         )
+                    if seq_norm_enabled:
+                        clip_metrics.setdefault(
+                            "adv_seq_sigmoid_amp_frac", torch.tensor(0.0, device=advantages.device)
+                        )
+                        clip_metrics.setdefault(
+                            "adv_seq_sigmoid_shrink_frac", torch.tensor(0.0, device=advantages.device)
+                        )
                     for key, value in clip_metrics.items():
                         if key.startswith("adv_sigmoid_") and key not in (
                             "adv_sigmoid_alpha_pos",
@@ -520,6 +534,9 @@ class MegatronPPOActor(BasePPOActor):
                         stats["actor/adv_sigmoid_alpha_pos"] = 0.0
                     if sigmoid_alpha_neg_cfg is not None:
                         stats["actor/adv_sigmoid_alpha_neg"] = 0.0
+                    if seq_norm_enabled:
+                        stats["actor/adv_seq_sigmoid_amp_frac"] = 0.0
+                        stats["actor/adv_seq_sigmoid_shrink_frac"] = 0.0
                 policy_loss = pg_loss
 
             if calculate_entropy:
@@ -714,7 +731,11 @@ class MegatronPPOActor(BasePPOActor):
                 # if use distributed optimizer, zero grad buffer will be handled by optimizer
                 chunk.zero_grad_buffer()
 
-            calculate_entropy = self.config.entropy_coeff != 0
+            clip_cfg = self.config.policy_loss.advantage_clip
+            clip_enabled = bool(getattr(clip_cfg, "enable", False))
+            clip_mode = getattr(clip_cfg, "mode", "")
+            seq_norm_enabled = clip_enabled and clip_mode == "seq_norm_sigmoid"
+            calculate_entropy = self.config.entropy_coeff != 0 or seq_norm_enabled
             if data.meta_info.get("micro_batch_size", None) is not None:
                 micro_batch_size = data.meta_info["micro_batch_size"]
             else:

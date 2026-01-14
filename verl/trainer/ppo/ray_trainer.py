@@ -1599,17 +1599,17 @@ class RayPPOTrainer:
                         old_log_prob_metrics = {"actor/entropy": entropy_value}
                         metrics.update(old_log_prob_metrics)
                         clip_cfg = getattr(self.config.actor_rollout_ref.actor.policy_loss, "advantage_clip", None)
-                        sigmoid_enabled = False
+                        sigmoid_like = False
                         sigmoid_has_alpha = False
                         if clip_cfg is not None:
-                            sigmoid_enabled = bool(getattr(clip_cfg, "enable", False)) and getattr(
-                                clip_cfg, "mode", ""
-                            ) == "sigmoid"
+                            clip_enabled = bool(getattr(clip_cfg, "enable", False))
+                            clip_mode = getattr(clip_cfg, "mode", "")
+                            sigmoid_like = clip_enabled and clip_mode in ("sigmoid", "seq_norm_sigmoid")
                             sigmoid_has_alpha = (
                                 getattr(clip_cfg, "sigmoid_alpha_pos", None) is not None
                                 or getattr(clip_cfg, "sigmoid_alpha_neg", None) is not None
                             )
-                        if sigmoid_enabled and sigmoid_has_alpha:
+                        if sigmoid_like and sigmoid_has_alpha:
                             if self.sigmoid_entropy_target is None:
                                 self.sigmoid_entropy_target = entropy_value
                             batch.meta_info["sigmoid_entropy_current"] = entropy_value
