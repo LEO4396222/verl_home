@@ -214,6 +214,12 @@ trainer:
   # Optional list of validation sample counts (e.g., [1, 32]); when set, runs validation for each n.
   validation_n_list: null
 
+  # 是否计算 pass@k 指标（精确公式）
+  validation_pass_metrics_enable: false
+
+  # pass@k 的 k 列表（仅在 enable 时生效）
+  validation_pass_metrics_ks: [8, 16, 32]
+
   # Validation frequency (in training iterations)
   test_freq: -1
 

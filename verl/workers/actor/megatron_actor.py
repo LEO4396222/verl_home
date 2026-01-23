@@ -466,6 +466,7 @@ class MegatronPPOActor(BasePPOActor):
                 # and avoids redundant computation across workers and micro-batches.
                 sigmoid_entropy_current = meta_info.get("sigmoid_entropy_current")
                 sigmoid_entropy_target = meta_info.get("sigmoid_entropy_target")
+                current_step = meta_info.get("global_steps")
                 token_entropys = None
                 if entropy is not None:
                     token_entropys = entropy[:, -response_length - 1 : -1].contiguous()
@@ -480,6 +481,7 @@ class MegatronPPOActor(BasePPOActor):
                     entropy_current=sigmoid_entropy_current,
                     entropy_target=sigmoid_entropy_target,
                     token_entropys=token_entropys,
+                    current_step=current_step,
                 )
                 clip_metrics = None
                 if (

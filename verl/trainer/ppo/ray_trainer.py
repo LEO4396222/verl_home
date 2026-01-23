@@ -714,11 +714,16 @@ class RayPPOTrainer:
                     reward_extra_infos_to_dump["advantage"] = seq_adv.detach().cpu().tolist()
                     clipped_adv = advantages
                     if old_log_probs is not None:
+                        token_entropys = batch.batch.get("token_entropys")
+                        entropy_target = batch.meta_info.get("sigmoid_entropy_target")
                         clipped_adv = _maybe_clip_advantages(
                             advantages,
                             old_log_probs,
                             response_mask,
                             self.config.actor_rollout_ref.actor,
+                            entropy_target=entropy_target,
+                            token_entropys=token_entropys,
+                            current_step=self.global_steps,
                         )
                     clipped_seq_adv = masked_mean(clipped_adv, response_mask, axis=-1)
                     reward_extra_infos_to_dump["advantage_clipped"] = clipped_seq_adv.detach().cpu().tolist()
@@ -971,7 +976,17 @@ class RayPPOTrainer:
 
         data_sources = np.concatenate(data_source_lst, axis=0)
 
-        data_src2var2metric2val = process_validation_metrics(data_sources, sample_uids, reward_extra_infos_dict)
+        pass_metrics_enable = bool(self.config.trainer.get("validation_pass_metrics_enable", False))
+        pass_metrics_ks = self.config.trainer.get("validation_pass_metrics_ks", None)
+        if pass_metrics_enable and (pass_metrics_ks is None or pass_metrics_ks == []):
+            pass_metrics_ks = [val_n]
+        data_src2var2metric2val = process_validation_metrics(
+            data_sources,
+            sample_uids,
+            reward_extra_infos_dict,
+            pass_metrics_enable=pass_metrics_enable,
+            pass_metrics_ks=pass_metrics_ks,
+        )
         metric_dict = {}
         for data_source, var2metric2val in data_src2var2metric2val.items():
             core_var = "acc" if "acc" in var2metric2val else "reward"
@@ -980,7 +995,7 @@ class RayPPOTrainer:
                 for metric_name, metric_val in metric2val.items():
                     if (
                         (var_name == core_var)
-                        and any(metric_name.startswith(pfx) for pfx in ["mean", "maj", "best"])
+                        and any(metric_name.startswith(pfx) for pfx in ["mean", "maj", "best", "pass"])
                         and (f"@{n_max}" in metric_name)
                     ):
                         metric_sec = "val-core"
@@ -1605,6 +1620,7 @@ class RayPPOTrainer:
                             clip_enabled = bool(getattr(clip_cfg, "enable", False))
                             clip_mode = getattr(clip_cfg, "mode", "")
                             sigmoid_like = clip_enabled and clip_mode in ("sigmoid", "seq_norm_sigmoid")
+                            seq_norm_enabled = clip_enabled and clip_mode == "seq_norm_sigmoid"
                             sigmoid_has_alpha = (
                                 getattr(clip_cfg, "sigmoid_alpha_pos", None) is not None
                                 or getattr(clip_cfg, "sigmoid_alpha_neg", None) is not None
@@ -1626,6 +1642,8 @@ class RayPPOTrainer:
                                 abs_diff = (-(log_probs) - entropys).abs()
                                 diff_mean = masked_mean(abs_diff, response_masks).detach().item()
                                 metrics["actor/neglogprob_entropy_abs_mean"] = diff_mean
+                        if "seq_norm_enabled" in locals() and seq_norm_enabled:
+                            batch.batch["token_entropys"] = entropys
                         if "reward_extra_infos_dict" in locals() and reward_extra_infos_dict is not None:
                             reward_extra_infos_dict["avg_token_entropy"] = avg_token_entropy
                         old_log_prob.batch.pop("entropys")
@@ -1735,6 +1753,7 @@ class RayPPOTrainer:
                         # update actor
                         with marked_timer("update_actor", timing_raw, color="red"):
                             batch.meta_info["multi_turn"] = self.config.actor_rollout_ref.rollout.multi_turn.enable
+                            batch.meta_info["global_steps"] = self.global_steps
                             actor_output = self.actor_rollout_wg.update_actor(batch)
                         actor_output_metrics = reduce_metrics(actor_output.meta_info["metrics"])
                         metrics.update(actor_output_metrics)

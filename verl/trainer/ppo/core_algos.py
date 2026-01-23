@@ -339,6 +339,7 @@ def _apply_seq_norm_sigmoid_clip(
     prob_eps: float,
     need_metrics: bool,
     entropy_target: float | None,
+    current_step: int | None,
 ) -> torch.Tensor | tuple[torch.Tensor, dict[str, torch.Tensor] | None]:
     """序列级 sigmoid：按序列内 p0 分位数 + 熵偏差对优势平滑加权，并做 L2 归一化。"""
     valid_mask = mask.to(dtype=torch.bool)
@@ -364,6 +365,25 @@ def _apply_seq_norm_sigmoid_clip(
         raise ValueError("advantage_clip.sigmoid_alpha_pos must be > 0 when set")
     if alpha_neg is not None and float(alpha_neg) >= 0.0:
         raise ValueError("advantage_clip.sigmoid_alpha_neg must be < 0 when set")
+
+    warmup_steps = _cfg_get(clip_conf, "sigmoid_alpha_warmup_steps", 0)
+    if warmup_steps is not None:
+        warmup_steps = int(warmup_steps)
+    if (
+        warmup_steps
+        and warmup_steps > 0
+        and current_step is not None
+        and alpha_pos is not None
+        and alpha_neg is not None
+    ):
+        if isinstance(current_step, torch.Tensor):
+            step_val = int(current_step.item())
+        else:
+            step_val = int(current_step)
+        step_val = max(step_val, 0)
+        warmup_ratio = min(step_val, warmup_steps) / float(warmup_steps)
+        alpha_pos = float(alpha_pos) * warmup_ratio
+        alpha_neg = float(alpha_neg) * warmup_ratio
 
     if p0_cfg is not None and not 0.0 < float(p0_cfg) <= 1.0:
         raise ValueError("advantage_clip.sigmoid_p0_prob must be in (0, 1]")
@@ -414,12 +434,14 @@ def _apply_seq_norm_sigmoid_clip(
 
     output = adv * weights
 
-    # 序列内 L2 归一化，保持尺度
-    adv_sq_sum = verl_F.masked_sum(adv * adv, mask, axis=-1)
-    out_sq_sum = verl_F.masked_sum(output * output, mask, axis=-1)
-    scale = torch.sqrt(adv_sq_sum / (out_sq_sum + prob_eps))
-    scale = torch.where(out_sq_sum > 0, scale, adv.new_ones(scale.shape))
-    output = output * scale[:, None]
+    # 序列内 L2 归一化（可选，默认关闭）
+    seq_norm_enable = bool(_cfg_get(clip_conf, "seq_norm_normalize", False))
+    if seq_norm_enable:
+        adv_sq_sum = verl_F.masked_sum(adv * adv, mask, axis=-1)
+        out_sq_sum = verl_F.masked_sum(output * output, mask, axis=-1)
+        scale = torch.sqrt(adv_sq_sum / (out_sq_sum + prob_eps))
+        scale = torch.where(out_sq_sum > 0, scale, adv.new_ones(scale.shape))
+        output = output * scale[:, None]
 
     if need_metrics:
         valid_tokens = valid_mask.sum().clamp(min=1).to(dtype=adv.dtype)
@@ -475,6 +497,7 @@ def apply_advantage_clip(
     entropy_current: float | None = None,
     entropy_target: float | None = None,
     token_entropys: torch.Tensor | None = None,
+    current_step: int | None = None,
 ) -> torch.Tensor | tuple[torch.Tensor, dict[str, torch.Tensor] | None]:
     """统一入口：根据 mode 选择 coef 或 quantile 裁剪，enable=False 时直接返回原优势。"""
     if clip_cfg is None or not _cfg_get(clip_cfg, "enable", False):
@@ -515,6 +538,7 @@ def apply_advantage_clip(
             prob_epsilon,
             return_clip_metrics,
             entropy_target,
+            current_step,
         )
     if mode == "quantile":
         return _apply_quantile_clip(advantages, old_log_prob, response_mask, clip_cfg, prob_epsilon, return_clip_metrics)
@@ -541,6 +565,7 @@ def _maybe_clip_advantages(
     entropy_current: float | None = None,
     entropy_target: float | None = None,
     token_entropys: torch.Tensor | None = None,
+    current_step: int | None = None,
 ) -> torch.Tensor | tuple[torch.Tensor, dict[str, torch.Tensor] | None]:
     """Apply advantage clipping if enabled (coef mode or quantile mode)."""
     if config is None:
@@ -566,6 +591,7 @@ def _maybe_clip_advantages(
         entropy_current=entropy_current,
         entropy_target=entropy_target,
         token_entropys=token_entropys,
+        current_step=current_step,
     )
 
 POLICY_LOSS_REGISTRY: dict[str, PolicyLossFn] = {}
@@ -1419,6 +1445,7 @@ def compute_policy_loss_vanilla(
     entropy_current: float | None = None,
     entropy_target: float | None = None,
     token_entropys: torch.Tensor | None = None,
+    current_step: int | None = None,
 ) -> (
     tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]
     | tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, dict[str, torch.Tensor]]
@@ -1481,6 +1508,7 @@ def compute_policy_loss_vanilla(
         entropy_current=entropy_current,
         entropy_target=entropy_target,
         token_entropys=token_entropys,
+        current_step=current_step,
     )
     if clip_enabled:
         advantages, clip_metrics = clipped_advantages
@@ -1539,6 +1567,7 @@ def compute_policy_loss_gspo(
     entropy_current: float | None = None,
     entropy_target: float | None = None,
     token_entropys: torch.Tensor | None = None,
+    current_step: int | None = None,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     """
     Compute the clipped policy objective and related metrics for GSPO.
@@ -1571,6 +1600,7 @@ def compute_policy_loss_gspo(
         entropy_current=entropy_current,
         entropy_target=entropy_target,
         token_entropys=token_entropys,
+        current_step=current_step,
     )
 
     negative_approx_kl = log_prob - old_log_prob
@@ -1622,6 +1652,7 @@ def compute_policy_loss_gpg(
     entropy_current: float | None = None,
     entropy_target: float | None = None,
     token_entropys: torch.Tensor | None = None,
+    current_step: int | None = None,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     """Adapted from
     https://github.com/AMAP-ML/GPG/blob/main/VisualThinker-R1-Zero/src/open-r1-multimodal/src/open_r1/trainer/grpo_trainer.py#L495
@@ -1644,6 +1675,7 @@ def compute_policy_loss_gpg(
         entropy_current=entropy_current,
         entropy_target=entropy_target,
         token_entropys=token_entropys,
+        current_step=current_step,
     )
     
     pg_losses = -log_prob * advantages
@@ -1668,6 +1700,7 @@ def compute_policy_loss_clip_cov(
     entropy_current: float | None = None,
     entropy_target: float | None = None,
     token_entropys: torch.Tensor | None = None,
+    current_step: int | None = None,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     """
     Compute the clipped policy objective and related metrics for Clip-Cov.
@@ -1721,6 +1754,7 @@ def compute_policy_loss_clip_cov(
         entropy_current=entropy_current,
         entropy_target=entropy_target,
         token_entropys=token_entropys,
+        current_step=current_step,
     )
     
     negative_approx_kl = log_prob - old_log_prob
@@ -1781,6 +1815,7 @@ def compute_policy_loss_kl_cov(
     entropy_current: float | None = None,
     entropy_target: float | None = None,
     token_entropys: torch.Tensor | None = None,
+    current_step: int | None = None,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     """
     Compute the clipped policy objective and related metrics for Clip-Cov.
@@ -1821,6 +1856,7 @@ def compute_policy_loss_kl_cov(
         entropy_current=entropy_current,
         entropy_target=entropy_target,
         token_entropys=token_entropys,
+        current_step=current_step,
     )
     
     negative_approx_kl = log_prob - old_log_prob
@@ -1870,6 +1906,7 @@ def compute_policy_loss_geo_mean(
     entropy_current: float | None = None,
     entropy_target: float | None = None,
     token_entropys: torch.Tensor | None = None,
+    current_step: int | None = None,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     """
     Compute the clipped policy objective and related metrics for GMPO.
@@ -1912,6 +1949,7 @@ def compute_policy_loss_geo_mean(
         entropy_current=entropy_current,
         entropy_target=entropy_target,
         token_entropys=token_entropys,
+        current_step=current_step,
     )
 
     negative_approx_kl = log_prob - old_log_prob

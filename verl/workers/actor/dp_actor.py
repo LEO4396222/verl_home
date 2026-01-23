@@ -391,6 +391,7 @@ class DataParallelPPOActor(BasePPOActor):
         clip_cfg = self.config.policy_loss.advantage_clip
         sigmoid_entropy_current = data.meta_info.get("sigmoid_entropy_current")
         sigmoid_entropy_target = data.meta_info.get("sigmoid_entropy_target")
+        current_step = data.meta_info.get("global_steps")
         clip_enabled = bool(getattr(clip_cfg, "enable", False))
         clip_mode = getattr(clip_cfg, "mode", "")
         sigmoid_enabled = clip_enabled and clip_mode in ("sigmoid", "seq_norm_sigmoid")
@@ -470,6 +471,7 @@ class DataParallelPPOActor(BasePPOActor):
                         entropy_current=sigmoid_entropy_current,
                         entropy_target=sigmoid_entropy_target,
                         token_entropys=entropy,
+                        current_step=current_step,
                     )
 
                     clip_metrics = None

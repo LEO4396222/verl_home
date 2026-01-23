@@ -71,6 +71,7 @@ def ppo_loss(config: ActorConfig, model_output, data: TensorDict, dp_group=None)
     policy_loss_fn = get_policy_loss_fn(loss_mode)
     entropy_current = data.get("sigmoid_entropy_current", None)
     entropy_target = data.get("sigmoid_entropy_target", None)
+    current_step = data.get("global_steps", None)
     policy_loss_output = policy_loss_fn(
         old_log_prob=old_log_prob,
         log_prob=log_prob,
@@ -81,6 +82,7 @@ def ppo_loss(config: ActorConfig, model_output, data: TensorDict, dp_group=None)
         entropy_current=entropy_current,
         entropy_target=entropy_target,
         token_entropys=entropy,
+        current_step=current_step,
     )
     
     clip_metrics = None

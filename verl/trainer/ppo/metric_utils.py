@@ -17,6 +17,7 @@ Metrics related to the PPO trainer.
 
 from collections import defaultdict
 from functools import partial
+import math
 from typing import Any, Callable
 
 import numpy as np
@@ -405,8 +406,67 @@ def calc_maj_val(data: list[dict[str, Any]], vote_key: str, val_key: str) -> flo
     return maj_val
 
 
+_PASS_ZERO_ONE_SOURCES = {
+    "huggingfaceh4/math-500",
+    "hothan/olympiadbench/oe_mm_maths_en_comp",
+    "olympiabench",
+    "math-ai/minervamath",
+    "minerva_math",
+    "openai/gsm8k",
+}
+
+_PASS_NEG_ONE_ONE_SOURCES = {
+    "amc23",
+    "math-ai/amc23",
+    "aime_2024",
+    "huggingfaceh4/aime_2024",
+    "maxwell-jia/aime_2024",
+    "aime_2025",
+    "yentinglin/aime_2025",
+}
+
+
+def _normalize_pass_source(data_source: Any) -> str:
+    if not isinstance(data_source, str):
+        return ""
+    return data_source.strip().lower()
+
+
+def _resolve_pass_threshold(data_source: Any, vals: list[float]) -> tuple[float, bool]:
+    source_norm = _normalize_pass_source(data_source)
+    if source_norm in _PASS_NEG_ONE_ONE_SOURCES:
+        return 0.0, True
+    if source_norm in _PASS_ZERO_ONE_SOURCES:
+        return 0.5, False
+    if any(v < 0 for v in vals):
+        return 0.0, True
+    return 0.5, False
+
+
+def _count_pass_correct(vals: list[float], data_source: Any) -> int:
+    threshold, strict_pos = _resolve_pass_threshold(data_source, vals)
+    if strict_pos:
+        return sum(1 for v in vals if float(v) > threshold)
+    return sum(1 for v in vals if float(v) >= threshold)
+
+
+def _pass_at_k(n: int, c: int, k: int) -> float:
+    if k <= 0 or n <= 0 or c <= 0:
+        return 0.0
+    if k >= n:
+        return 1.0
+    if k > n - c:
+        return 1.0
+    return 1.0 - math.comb(n - c, k) / math.comb(n, k)
+
+
 def process_validation_metrics(
-    data_sources: list[str], sample_uids: list[str], infos_dict: dict[str, list[Any]], seed: int = 42
+    data_sources: list[str],
+    sample_uids: list[str],
+    infos_dict: dict[str, list[Any]],
+    seed: int = 42,
+    pass_metrics_enable: bool = False,
+    pass_metrics_ks: list[int] | None = None,
 ) -> dict[str, dict[str, dict[str, float]]]:
     """
     Process validation metrics into a structured format with statistical analysis.
@@ -421,6 +481,8 @@ def process_validation_metrics(
         sample_uids: List of sample uids corresponding to each sample.
         infos_dict: Dictionary mapping variable names to lists of values for each sample.
         seed: Random seed for bootstrap sampling. Defaults to 42.
+        pass_metrics_enable: 是否计算 pass@k 指标。
+        pass_metrics_ks: pass@k 的 k 列表（正整数）。
 
     Returns:
         A nested dictionary with the structure:
@@ -439,6 +501,7 @@ def process_validation_metrics(
         - "best@N/std": Standard deviation of the best values in bootstrap samples
         - "worst@N/mean": Mean of the worst values in bootstrap samples
         - "worst@N/std": Standard deviation of the worst values in bootstrap samples
+        - "pass@K": pass@K 指标（精确公式）
         - "maj@N/mean": Mean of majority voting results in bootstrap samples (if "pred" exists)
         - "maj@N/std": Standard deviation of majority voting results (if "pred" exists)
 
@@ -449,6 +512,8 @@ def process_validation_metrics(
         >>> result = process_validation_metrics(data_sources, sample_uids, infos_dict)
         >>> # result will contain statistics for each data source and variable
     """
+    pass_metrics_ks = sorted({int(k) for k in (pass_metrics_ks or []) if int(k) > 0})
+
     # Group metrics by data source, prompt and variable
     data_src2uid2var2vals = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
     for sample_idx, data_source in enumerate(data_sources):
@@ -461,6 +526,7 @@ def process_validation_metrics(
     data_src2uid2var2metric = defaultdict(lambda: defaultdict(lambda: defaultdict(dict)))
     for data_source, uid2var2vals in data_src2uid2var2vals.items():
         for uid, var2vals in uid2var2vals.items():
+            pass_target_var = "acc" if "acc" in var2vals else "reward"
             for var_name, var_vals in var2vals.items():
                 # 过滤掉 None/非标量，避免 None 被均值计算触发 TypeError
                 numeric_vals = [
@@ -472,6 +538,13 @@ def process_validation_metrics(
                 metric = {}
                 n_resps = len(numeric_vals)
                 metric[f"mean@{n_resps}"] = np.mean(numeric_vals)
+
+                if pass_metrics_enable and pass_metrics_ks and var_name == pass_target_var:
+                    num_correct = _count_pass_correct(numeric_vals, data_source)
+                    for k in pass_metrics_ks:
+                        if k > n_resps:
+                            continue
+                        metric[f"pass@{k}"] = _pass_at_k(n_resps, num_correct, k)
 
                 if n_resps > 1:
                     metric[f"std@{n_resps}"] = np.std(numeric_vals)

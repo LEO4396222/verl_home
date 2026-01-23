@@ -59,6 +59,8 @@ class AdvantageClipConfig(BaseConfig):
         sigmoid_alpha_pos (float): Sigmoid 模式下正优势侧的斜率；为 None 时关闭正侧加权。
         sigmoid_alpha_neg (float): Sigmoid 模式下负优势侧的斜率；为 None 时关闭负侧加权。
         sigmoid_entropy_target (float | None): Sigmoid 模式熵目标（训练开始时自动设定）。
+        sigmoid_alpha_warmup_steps (int): Sigmoid alpha 线性 warmup 步数（<=0 关闭）。
+        seq_norm_normalize (bool): 是否启用 seq_norm_sigmoid 的序列内 L2 归一化。
         pos_weight_enable (bool): 是否按序列位置对优势加权（前重后轻）。
         pos_weight_alpha (float | None): 位置权重的斜率；None 或非正数时视为关闭。
     """
@@ -83,6 +85,8 @@ class AdvantageClipConfig(BaseConfig):
     sigmoid_alpha_pos: float | None = None
     sigmoid_alpha_neg: float | None = None
     sigmoid_entropy_target: float | None = None
+    sigmoid_alpha_warmup_steps: int = 0
+    seq_norm_normalize: bool = False
     pos_weight_enable: bool = False
     pos_weight_alpha: float | None = None
 

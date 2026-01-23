@@ -81,6 +81,8 @@ actor_rollout_ref:
         sigmoid_alpha_pos: null
         sigmoid_alpha_neg: null
         sigmoid_entropy_target: null
+        sigmoid_alpha_warmup_steps: 0
+        seq_norm_normalize: false
         pos_weight_enable: false
         pos_weight_alpha: null
     clip_ratio_c: 3.0

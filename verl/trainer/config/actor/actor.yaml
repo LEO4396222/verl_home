@@ -130,6 +130,12 @@ policy_loss:
     # Sigmoid 熵目标，训练开始时自动设定
     sigmoid_entropy_target: null
 
+    # Sigmoid alpha 线性 warmup 步数（<=0 关闭）
+    sigmoid_alpha_warmup_steps: 0
+
+    # 是否启用 seq_norm_sigmoid 的序列内 L2 归一化
+    seq_norm_normalize: false
+
     # Whether to apply positional weighting (front > 1, back < 1) to advantages
     pos_weight_enable: false
 
